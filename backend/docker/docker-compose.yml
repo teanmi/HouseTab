@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"       # maps container port 3000 to host
+    env_file:
+      - ./backend/.env    # load backend secrets
+    volumes:
+      - ./backend:/app    # mount local backend for live reload
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: HouseTab
+    ports:
+      - "3306:3306"       # map MySQL port
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
