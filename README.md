@@ -1,97 +1,130 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# HouseTab Mobile App
 
-# Getting Started
+A React Native CLI mobile app for managing house expenses and teams. This project includes a **React Native** frontend, a **Node.js/Express backend**, and a **MySQL database**. Docker is included for easy local development.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+-------------------
 
-## Step 1: Start Metro
+## Table of Contents
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+[Requirements](#requirements)
+[Setup](#setup)
+[Running the App](#running-the-app)
+[Project Structure](#project-structure)
+[Environment Variables](#environment-variables)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+------------
 
-```sh
-# Using npm
-npm start
+## Requirements
 
-# OR using Yarn
-yarn start
+Make sure the following are installed on your system:
+
+- nvm (Node Version Manager) – recommended to manage Node versions
+  - Windows: https://github.com/coreybutler/nvm-windows?tab=readme-ov-file
+  - Linux: https://github.com/nvm-sh/nvm
+- Node.js 20 (should include npm 10+ and npx)
+  - Install using Command line with nvm (`nvm install 20`)
+- Java 17+ (required for some backend tasks, if applicable)
+  - https://adoptium.net/temurin/releases/?version=17&os=any&arch=any
+- Android Studio (if building mobile components)
+  - https://developer.android.com/studio
+- Docker (for containerized development)
+  - https://developer.android.com/studio
+
+## Setup
+
+**1. Clone the repository:**
+```
+git clone https://github.com/teanmi/HouseTab.git
+cd housetab
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+**2. Install Node via NVM (Node Version Manager):**
+- Make sure nvm is installed:
+- Install and use Node.js v20:
+```
+nvm install 20
+nvm use 20
+node -v    # should show v20.x.x
+npm -v     # should show npm 10.x.x
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+**3. Install dependencies:**
+**Frontend:**
+```
+cd mobile
+npm ci
+```
+**Backend:**
+```
+cd ../backend
+npm ci
 ```
 
-Then, and every time you update your native dependencies, run:
+**4. Set up environment variables:**
+Copy the `.env.example` in the backend folder and edit with your configuration:
+'cp backend/.env.example backend/.env'
+**Example** `.env`: (Needs Updates)
 
-```sh
-bundle exec pod install
+---------------
+
+## Running the App
+
+**1. Start Backend + MySQL (Docker)**
+```
+cd backend
+docker compose up
+```
+- Backend API will be available at `http://localhost:3000`
+- MySQL database credentials are defined in `.env`
+
+**2. Start Metro Bundler (React Native)**
+```
+cd ../mobile
+npx react-native dev
+```
+- Keep this terminal open — it serves your JavaScript bundle to the emulator or device.
+  
+**3. Run Android App**
+- Open a Pixel 5 emulator via Android Studio, or connect a physical device.
+- In a separate terminal:
+```
+cd mobile
+npx react-native run-android
+```
+- App will build and launch on the device/emulator.
+
+**4. Notes**
+- For Windows + WSL users: Metro Bundler can run in WSL, Android Studio must run in Windows.
+- Ensure `API_URL` in `mobile/.env` points to your backend (use your host IP if on device):
+`API_URL=http://192.168.1.100:3000`
+- If `npm ci` fails due to file locks (EBUSY), close Android Studio, VS Code, and any Metro terminals, then retry.
+
+--------------------
+
+## Project Structure
+```
+housetab/
+├─ backend/         # Node.js/Express backend
+│  ├─ src/
+│  ├─ Dockerfile
+│  ├─ .env
+│  ├─ .env.example
+│  ├─ package-lock.json
+│  └─ package.json
+├─ mobile/          # Next.js / React frontend
+│  ├─ __tests__/    # jest tests
+│  ├─ android/
+│  ├─ ios/
+│  ├─ src/
+│  ├─ .env
+│  ├─ .env.example
+│  ├─ .env
+│  ├─ .App.tsx
+│  ├─ package-lock.json
+│  └─ package.json
+├─ .gitignore
+├─ docker-compose.yml
+└─ README.md
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## Environment Variables

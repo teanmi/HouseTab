@@ -4,11 +4,11 @@ services:
   backend:
     build: ./backend
     ports:
-      - "3000:3000"       # maps container port 3000 to host
+      - "3000:3000"
     env_file:
-      - ./backend/.env    # load backend secrets
+      - ./backend/.env
     volumes:
-      - ./backend:/app    # mount local backend for live reload
+      - ./backend:/app
     depends_on:
       - db
 
@@ -18,7 +18,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: HouseTab
     ports:
-      - "3306:3306"       # map MySQL port
+      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
 
