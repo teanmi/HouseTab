@@ -9,7 +9,8 @@ const { runMigrations } = require('./migrations');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-env';
+const HOST = process.env.HOST || '0.0.0.0';
+const JWT_SECRET = process.env.JWT_SECRET;
 const AUTO_MIGRATE = String(process.env.AUTO_MIGRATE || 'false').toLowerCase() === 'true';
 
 app.use(cors());
@@ -152,8 +153,15 @@ async function startServer() {
       console.log('Auto-migrations complete.');
     }
 
-    app.listen(PORT, () => {
-      console.log(`Server running at http://localhost:${PORT}`);
+    app.listen(PORT, HOST, () => {
+      const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        : null;
+
+      console.log(`Server listening on ${HOST}:${PORT}`);
+      if (railwayUrl) {
+        console.log(`Public URL: ${railwayUrl}`);
+      }
     });
   } catch (error) {
     console.error('Failed to start server:', error);

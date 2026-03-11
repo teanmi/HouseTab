@@ -8,4 +8,4 @@ const LOCAL_API_BASE_URL = Platform.select({
 
 export const API_BASE_URL = __DEV__
   ? LOCAL_API_BASE_URL
-  : 'https://your-backend.up.railway.app';
+  : 'https://your-backend.housetab-backend-production.up.railway.app.railway.app';
