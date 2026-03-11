@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "migrate:create": "node src/createMigration.js",
+    "migrate:up": "node src/runMigrations.js",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"
   },

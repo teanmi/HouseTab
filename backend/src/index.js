@@ -2,37 +2,18 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { pool } = require('./db');
+const { runMigrations } = require('./migrations');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-env';
-
-const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT
-});
+const AUTO_MIGRATE = String(process.env.AUTO_MIGRATE || 'false').toLowerCase() === 'true';
 
 app.use(cors());
 app.use(express.json());
-
-// async function initDatabase() {
-//     await pool.query(`
-//         CREATE TABLE IF NOT EXISTS users (
-//             id INT AUTO_INCREMENT PRIMARY KEY,
-//             name VARCHAR(100) NOT NULL,
-//             email VARCHAR(255) NOT NULL UNIQUE,
-//             password_hash VARCHAR(255) NOT NULL,
-//             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-//         )
-//     `);
-//     console.log('Database initialized (users table ready).');
-// }
 
 function signToken(user) {
   return jwt.sign(
@@ -166,7 +147,11 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
 
 async function startServer() {
   try {
-    await initDatabase();
+    if (AUTO_MIGRATE) {
+      await runMigrations(pool);
+      console.log('Auto-migrations complete.');
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
     });

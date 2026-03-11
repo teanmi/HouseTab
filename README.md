@@ -9,6 +9,8 @@ A React Native CLI mobile app for managing house expenses and teams. This projec
 [Requirements](#requirements)
 [Setup](#setup)
 [Running the App](#running-the-app)
+[MySQL](#mysql)
+[Migrations](#migrations)
 [Railway Deployment](#railway-deployment)
 [Project Structure](#project-structure)
 [Environment Variables](#environment-variables)
@@ -115,6 +117,75 @@ npx react-native run-android
 - In production builds, update `mobile/src/config.ts` so `API_BASE_URL` matches your Railway backend URL.
 - If `npm ci` fails due to file locks (EBUSY), close Android Studio, VS Code, and any Metro terminals, then retry.
 
+## MySQL
+
+Use the VS Code Database Client extension to inspect your Railway MySQL database.
+
+**1. Install a database client extension**
+
+- In VS Code, open the Extensions view.
+- Search for `Database Client` and install a MySQL-compatible extension such as `Database Client JDBC` or your preferred SQL client.
+
+**2. Get Railway database credentials**
+
+- Open your Railway project.
+- Select the MySQL service.
+- Open the `Connect` tab.
+- Copy the **public** connection details if you want to connect from your local machine.
+- Do not use `*.railway.internal` for local tools; that hostname only works inside Railway.
+
+You can use either:
+
+- a full connection string, such as `MYSQL_TEST_URL`
+- or individual values: host, port, database, username, password
+
+**3. Create a new connection in VS Code**
+
+- Open the Database Client extension.
+- Choose `New Connection`.
+- Select `MySQL`.
+- Fill in:
+  - `Host`: Railway public host
+  - `Port`: Railway port
+  - `Database`: Railway database name
+  - `User`: Railway username
+  - `Password`: Railway password
+- Save the connection with a name like `HouseTab Test DB` or `HouseTab Prod DB`.
+
+**4. Test the connection**
+
+- Use the extension's `Test Connection` button if available.
+- Open the saved connection and verify that tables such as `users` and `schema_migrations` are visible.
+
+**5. Local migration note**
+
+- If you run `npm run migrate:up` locally, use the Railway **public** host/URL in `backend/.env`.
+- If you deploy with `AUTO_MIGRATE=true`, Railway can use its internal connection automatically during app startup.
+
+## Migrations
+
+From `backend/`:
+
+Create a new migration file:
+
+```
+npm run migrate:create --name=[name]
+```
+
+Apply pending migrations:
+
+```
+npm run migrate:up
+```
+
+To run migrations automatically on deploy/startup, set:
+
+```
+AUTO_MIGRATE=true
+```
+
+When `AUTO_MIGRATE=true`, the backend applies pending files in `backend/migrations` before listening for requests.
+
 ## Railway Deployment
 
 **Backend service**
@@ -133,6 +204,7 @@ npx react-native run-android
 **Required backend variables**
 
 - `JWT_SECRET`
+- `AUTO_MIGRATE` (`true` in prod if you want automatic schema updates during deploy)
 - `DB_TARGET` (`test` or `prod`)
 - Test scope: `MYSQL_TEST_HOST`, `MYSQL_TEST_PORT`, `MYSQL_TEST_USER`, `MYSQL_TEST_PASSWORD`, `MYSQL_TEST_DATABASE`
 - Prod scope: `MYSQL_PROD_HOST`, `MYSQL_PROD_PORT`, `MYSQL_PROD_USER`, `MYSQL_PROD_PASSWORD`, `MYSQL_PROD_DATABASE`
