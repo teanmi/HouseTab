@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Button,
-  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -14,7 +13,9 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { API_BASE_URL } from './src/config';
 
 type User = {
   id: number;
@@ -28,11 +29,6 @@ type AuthStackParamList = {
 };
 
 const AUTH_TOKEN_KEY = 'auth_token';
-const API_BASE_URL = Platform.select({
-  android: 'http://10.0.2.2:3000',
-  ios: 'http://localhost:3000',
-  default: 'http://localhost:3000',
-});
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -128,10 +124,12 @@ function AppContent() {
     <NavigationContainer>
       <Stack.Navigator>
         <Stack.Screen name="Login">
-          {props => <LoginScreen {...props} onAuthSuccess={context.saveAuth} />}
+          {(props: NativeStackScreenProps<AuthStackParamList, 'Login'>) => (
+            <LoginScreen {...props} onAuthSuccess={context.saveAuth} />
+          )}
         </Stack.Screen>
         <Stack.Screen name="Register">
-          {props => (
+          {(props: NativeStackScreenProps<AuthStackParamList, 'Register'>) => (
             <RegisterScreen {...props} onAuthSuccess={context.saveAuth} />
           )}
         </Stack.Screen>
