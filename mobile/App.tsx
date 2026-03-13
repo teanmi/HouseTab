@@ -16,6 +16,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { API_BASE_URL } from './src/config';
+import BudgetScreen from './src/screens/BudgetScreen';
 
 type User = {
   id: number;
@@ -296,12 +297,29 @@ function HomeScreen({
   user: User;
   onLogout: () => Promise<void>;
 }) {
+  const [showBudget, setShowBudget] = useState(false);
+  const roomates = ["roomate1", "roomate2", "roomate3"];
+
+  if (showBudget) {
+    return (
+      <BudgetScreen
+        userName={user.name}
+        roomates={roomates}
+        onBack={() => setShowBudget(false)}
+      />    
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screenContainer}>
       <Text style={styles.title}>Home</Text>
       <Text style={styles.infoText}>Welcome, {user.name}</Text>
       <Text style={styles.infoText}>{user.email}</Text>
       <View style={styles.spacer} />
+      <Button
+        title="Open Budget"
+        onPress={() => setShowBudget(true)}
+      />
       <Button title="Logout" onPress={onLogout} />
     </SafeAreaView>
   );
