@@ -43,7 +43,9 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [date, setDate] = useState<Date | null>(null);
 
-  const blurOpacity = useState(new RNAnimated.Value(0))[0];
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
+  const [blurOpacity] = useState(new RNAnimated.Value(0));
 
   React.useEffect(() => {
     RNAnimated.timing(blurOpacity, {
@@ -68,6 +70,11 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
       return;
     }
 
+    if (splitType !== "individual" && selectedUsers.length === 0) {
+      Alert.alert("Select Users", "Choose at least one person to split with.");
+      return;
+    }
+
     onSave(
       expenseName,
       parsedAmount.toString(),
@@ -84,6 +91,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
     setExpenseAmount("");
     setDate(null);
     setSplitType("everyone");
+    setSelectedUsers([]);
   };
 
   const handleClose = () => {
@@ -100,6 +108,16 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
     everyone: "Everyone",
     individual: "Individuals",
     none: "Don't Split",
+  };
+
+  const toggleUser = (user: string) => {
+    setSelectedUsers((prev) => {
+      if (prev.includes(user)) {
+        if (prev.length === 1) return prev; // prevent removing last person
+        return prev.filter((u) => u !== user);
+      }
+      return [...prev, user];
+    });
   };
 
   return (
@@ -215,7 +233,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
                 title={splitType === "everyone" ? "✓ Split With Everyone" : "Split With Everyone"}
                 onPress={() => {
                   setSplitType("everyone");
-                  setSplitModalVisible(false);
+                  setSelectedUsers(users);
                 }}
               />
 
@@ -223,7 +241,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
                 title={splitType === "individual" ? "✓ Split Individually" : "Split Individually"}
                 onPress={() => {
                   setSplitType("individual");
-                  setSplitModalVisible(false);
+                  setSelectedUsers([]);
                 }}
               />
 
@@ -231,12 +249,38 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
                 title={splitType === "none" ? "✓ Don't Split" : "Don't Split"}
                 onPress={() => {
                   setSplitType("none");
-                  setSplitModalVisible(false);
                 }}
               />
 
+              {splitType !== "none" && (
+                <View style={{ marginTop: 10 }}>
+                  <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                    Split Between
+                  </Text>
+
+                  {users.map((user) => {
+                    const selected = selectedUsers.includes(user);
+
+                    return (
+                        <Pressable
+                        key={user}
+                        style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            paddingVertical: 10,
+                        }}
+                        onPress={() => toggleUser(user)}
+                        >
+                        <Text>{user}</Text>
+                        <Text style={{ fontSize: 20 }}>{selected ? "☑" : "☐"}</Text>
+                        </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+
               <PressableButton
-                title="Back"
+                title="Save"
                 onPress={() => setSplitModalVisible(false)}
               />
 
