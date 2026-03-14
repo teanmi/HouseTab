@@ -15,6 +15,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 import PressableButton from "./PressableButton";
 import { styles } from "../styles/budgetStyles";
+import { Expense } from "../types/Expense";
 
 type Props = {
   visible: boolean;
@@ -23,13 +24,15 @@ type Props = {
     name: string,
     amount: string,
     paidBy: string,
-    splitType: string,
-    date: string
+    splitType: "everyone" | "individual" | "none",
+    splitWith?: string[],
+    date?: string
   ) => void;
   users: string[];
+  expenseToEdit?: Expense | null;
 };
 
-const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
+const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props) => {
 
   const [expenseName, setExpenseName] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
@@ -61,6 +64,27 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
     }
   }, [users]);
 
+  React.useEffect(() => {
+    if (expenseToEdit) {
+      setExpenseName(expenseToEdit.name);
+      setExpenseAmount(expenseToEdit.amount.toString());
+      setPaidBy(expenseToEdit.paidBy);
+      setSplitType(expenseToEdit.splitType);
+      setDate(expenseToEdit.date ? new Date(expenseToEdit.date) : null);
+
+      setSelectedUsers(
+        expenseToEdit.splitWith && expenseToEdit.splitWith.length > 0
+          ? expenseToEdit.splitWith
+          : expenseToEdit.splitType === "everyone"
+          ? [...users] // default to everyone if no splitWith
+          : []
+      );
+    } else {
+      setSelectedUsers(users);
+    }
+  }, [expenseToEdit]);
+
+
   const handleSave = () => {
 
     const parsedAmount = parseFloat(expenseAmount);
@@ -70,17 +94,13 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
       return;
     }
 
-    if (splitType !== "individual" && selectedUsers.length === 0) {
-      Alert.alert("Select Users", "Choose at least one person to split with.");
-      return;
-    }
-
     onSave(
       expenseName,
       parsedAmount.toString(),
       paidBy,
       splitType,
-      date ? date.toISOString() : ""
+      selectedUsers,
+      date ? date.toISOString() : "",
     );
 
     resetForm();
@@ -249,10 +269,11 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
                 title={splitType === "none" ? "✓ Don't Split" : "Don't Split"}
                 onPress={() => {
                   setSplitType("none");
+                  setSelectedUsers([]);
                 }}
               />
 
-              {splitType !== "none" && (
+              {splitType === "individual" && (
                 <View style={{ marginTop: 10 }}>
                   <Text style={{ fontWeight: "600", marginBottom: 6 }}>
                     Split Between
@@ -281,7 +302,12 @@ const ExpenseModal = ({ visible, onClose, onSave, users }: Props) => {
 
               <PressableButton
                 title="Save"
-                onPress={() => setSplitModalVisible(false)}
+                onPress={() => {
+                  setSplitModalVisible(false);
+                  if (splitType === "individual" && selectedUsers.length === 0){
+                    setSplitType("individual");
+                  }
+                }}
               />
 
             </View>

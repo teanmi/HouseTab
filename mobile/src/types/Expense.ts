@@ -4,5 +4,6 @@ export type Expense = {
   amount: number;
   paidBy: string;
   splitType: "everyone" | "individual" | "none";
+  splitWith?: string[];
   date?: string;
 };
