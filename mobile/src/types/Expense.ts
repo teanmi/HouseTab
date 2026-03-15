@@ -6,4 +6,5 @@ export type Expense = {
   splitType: "everyone" | "individual" | "none";
   splitWith?: string[];
   date?: string;
+  type?: "expense" | "settlement";
 };

@@ -168,7 +168,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
             <TextInput
               style={styles.input}
               placeholder="Amount"
-              keyboardType="decimal-pad"
+              keyboardType="numeric"
               value={expenseAmount}
               onChangeText={(text) => {
                 const cleaned = text.replace(/[^0-9.]/g, "");
@@ -194,7 +194,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
               onPress={() => setShowDatePicker(true)}
             >
               <Text>
-                {date ? date.toLocaleDateString() : "Select Date"}
+                {date ? date.toLocaleDateString() : "Select Date (Optional)"}
               </Text>
             </Pressable>
 
