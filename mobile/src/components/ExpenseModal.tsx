@@ -261,7 +261,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
                 title={splitType === "individual" ? "✓ Split Individually" : "Split Individually"}
                 onPress={() => {
                   setSplitType("individual");
-                  setSelectedUsers([]);
+                  setSelectedUsers(users.filter((u) => u === paidBy));
                 }}
               />
 
@@ -304,8 +304,11 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
                 title="Save"
                 onPress={() => {
                   setSplitModalVisible(false);
-                  if (splitType === "individual" && selectedUsers.length === 0){
-                    setSplitType("individual");
+                  if (selectedUsers.length === 0){
+                    setSplitType("none");
+                  }
+                  if (selectedUsers.length === users.length){
+                    setSplitType("everyone");
                   }
                 }}
               />
