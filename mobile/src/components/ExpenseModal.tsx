@@ -111,7 +111,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
     setExpenseAmount("");
     setDate(null);
     setSplitType("everyone");
-    setSelectedUsers([]);
+    setSelectedUsers(users);
   };
 
   const handleClose = () => {
