@@ -2,23 +2,13 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { User } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 import { AppNavigator } from './AppNavigator';
 import { AuthNavigator } from './AuthNavigator';
 
-type Props = {
-  authStatus: 'checking' | 'loggedOut' | 'loggedIn';
-  user: User | null;
-  onAuthSuccess: (nextToken: string, nextUser: User) => Promise<void>;
-  onLogout: () => Promise<void>;
-};
+export function RootNavigator() {
+  const { authStatus, user } = useAuth();
 
-export function RootNavigator({
-  authStatus,
-  user,
-  onAuthSuccess,
-  onLogout,
-}: Props) {
   if (authStatus === 'checking') {
     return (
       <SafeAreaView style={styles.centeredContainer}>
@@ -30,11 +20,7 @@ export function RootNavigator({
 
   return (
     <NavigationContainer>
-      {authStatus === 'loggedIn' && user ? (
-        <AppNavigator user={user} onLogout={onLogout} />
-      ) : (
-        <AuthNavigator onAuthSuccess={onAuthSuccess} />
-      )}
+      {authStatus === 'loggedIn' && user ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }

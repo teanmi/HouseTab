@@ -3,14 +3,13 @@ import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { authApi } from '../../api/auth';
-import type { User } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Login'> & {
-  onAuthSuccess: (nextToken: string, nextUser: User) => Promise<void>;
-};
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-export function LoginScreen({ navigation, onAuthSuccess }: Props) {
+export function LoginScreen({ navigation }: Props) {
+  const { saveAuth } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +23,7 @@ export function LoginScreen({ navigation, onAuthSuccess }: Props) {
     try {
       setIsLoading(true);
       const data = await authApi.login(email, password);
-      await onAuthSuccess(data.token, data.user);
+      await saveAuth(data.token, data.user);
     } catch (error) {
       Alert.alert(
         'Login failed',

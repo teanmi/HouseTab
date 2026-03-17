@@ -1,21 +1,22 @@
 import React from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { User } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 
-type Props = {
-  user: User;
-  onLogout: () => Promise<void>;
-};
+export function HomeScreen() {
+  const { user, logout } = useAuth();
 
-export function HomeScreen({ user, onLogout }: Props) {
+  if (!user) {
+    return null;
+  }
+
   return (
     <SafeAreaView style={styles.screenContainer}>
       <Text style={styles.title}>Home</Text>
       <Text style={styles.infoText}>Welcome, {user.name}</Text>
       <Text style={styles.infoText}>{user.email}</Text>
       <View style={styles.spacer} />
-      <Button title="Logout" onPress={onLogout} />
+      <Button title="Logout" onPress={logout} />
     </SafeAreaView>
   );
 }

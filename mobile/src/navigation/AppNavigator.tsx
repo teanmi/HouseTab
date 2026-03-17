@@ -1,22 +1,25 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { User } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import type { AppStackParamList } from './types';
 
 const AppStack = createNativeStackNavigator<AppStackParamList>();
 
-type Props = {
-  user: User;
-  onLogout: () => Promise<void>;
-};
+export function AppNavigator() {
+  const { user } = useAuth();
 
-export function AppNavigator({ user, onLogout }: Props) {
+  if (!user) {
+    return null;
+  }
+
   return (
     <AppStack.Navigator>
-      <AppStack.Screen name="Home" options={{ headerShown: false }}>
-        {() => <HomeScreen user={user} onLogout={onLogout} />}
-      </AppStack.Screen>
+      <AppStack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
     </AppStack.Navigator>
   );
 }

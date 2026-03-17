@@ -3,14 +3,13 @@ import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { authApi } from '../../api/auth';
-import type { User } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Register'> & {
-  onAuthSuccess: (nextToken: string, nextUser: User) => Promise<void>;
-};
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
-export function RegisterScreen({ navigation, onAuthSuccess }: Props) {
+export function RegisterScreen({ navigation }: Props) {
+  const { saveAuth } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +24,7 @@ export function RegisterScreen({ navigation, onAuthSuccess }: Props) {
     try {
       setIsLoading(true);
       const data = await authApi.register(name, email, password);
-      await onAuthSuccess(data.token, data.user);
+      await saveAuth(data.token, data.user);
     } catch (error) {
       Alert.alert(
         'Registration failed',
