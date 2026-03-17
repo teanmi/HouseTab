@@ -20,7 +20,9 @@ target 'HouseTab' do
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :flipper_configuration => FlipperConfiguration.disabled,
+    :hermes_enabled => true
   )
 
   post_install do |installer|
@@ -28,7 +30,7 @@ target 'HouseTab' do
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
+      :ccache_enabled => true
     )
   end
 end
