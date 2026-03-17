@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Button,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Alert,
+    Button,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    useColorScheme,
+    View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
@@ -16,11 +16,23 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { API_BASE_URL } from './src/config';
+import HouseListScreen from './src/screens/houses/HouseListScreen';
+import CreateHouseScreen from './src/screens/houses/CreateHouseScreen';
+import JoinHouseScreen from './src/screens/houses/JoinHouseScreen';
+import HouseDetailsScreen from './src/screens/houses/HouseDetailsScreen';
 
 type User = {
   id: number;
   name: string;
   email: string;
+};
+
+type House = {
+  id: number;
+  name: string;
+  join_code: string;
+  member_count: number;
+  role: 'owner' | 'member';
 };
 
 type AuthStackParamList = {
@@ -116,8 +128,14 @@ function AppContent() {
     );
   }
 
-  if (authStatus === 'loggedIn' && context.user) {
-    return <HomeScreen user={context.user} onLogout={context.logout} />;
+  if (authStatus === 'loggedIn' && context.user && context.token) {
+    return (
+      <HomeScreen
+        user={context.user}
+        token={context.token}
+        onLogout={context.logout}
+      />
+    );
   }
 
   return (
@@ -291,18 +309,74 @@ function RegisterScreen({
 
 function HomeScreen({
   user,
+  token,
   onLogout,
 }: {
   user: User;
+  token: string;
   onLogout: () => Promise<void>;
 }) {
+  const [currentScreen, setCurrentScreen] = useState<'list' | 'create' | 'join' | 'details'>('list');
+  const [selectedHouse, setSelectedHouse] = useState<House | null>(null);
+
+  const handleSelectHouse = (house: House) => {
+    setSelectedHouse(house);
+    setCurrentScreen('details');
+  };
+
+  const handleHouseCreated = (_house: any) => {
+    setCurrentScreen('list');
+  };
+
+  const handleHouseJoined = (_house: any) => {
+    setCurrentScreen('list');
+  };
+
+  const handleBackToList = () => {
+    setCurrentScreen('list');
+    setSelectedHouse(null);
+  };
+
   return (
     <SafeAreaView style={styles.screenContainer}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.infoText}>Welcome, {user.name}</Text>
-      <Text style={styles.infoText}>{user.email}</Text>
-      <View style={styles.spacer} />
-      <Button title="Logout" onPress={onLogout} />
+      {currentScreen === 'list' && (
+        <HouseListScreen
+          token={token}
+          onSelectHouse={handleSelectHouse}
+          onCreateHouse={() => setCurrentScreen('create')}
+          onJoinHouse={() => setCurrentScreen('join')}
+        />
+      )}
+
+      {currentScreen === 'create' && (
+        <CreateHouseScreen
+          token={token}
+          onHouseCreated={handleHouseCreated}
+          onCancel={handleBackToList}
+        />
+      )}
+
+      {currentScreen === 'join' && (
+        <JoinHouseScreen
+          token={token}
+          onHouseJoined={handleHouseJoined}
+          onCancel={handleBackToList}
+        />
+      )}
+
+      {currentScreen === 'details' && selectedHouse && (
+        <HouseDetailsScreen
+          houseId={selectedHouse.id}
+          token={token}
+          onBackPress={handleBackToList}
+        />
+      )}
+
+      {currentScreen === 'list' && (
+        <View style={styles.logoutContainer}>
+          <Button title="Logout" onPress={onLogout} color="#6b7280" />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -339,6 +413,11 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 16,
+  },
+  logoutContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
   },
 });
 
