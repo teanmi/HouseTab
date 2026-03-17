@@ -1,12 +1,7 @@
 import React from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-type User = {
-  id: number;
-  name: string;
-  email: string;
-};
+import type { User } from '../../api/auth';
 
 type Props = {
   user: User;

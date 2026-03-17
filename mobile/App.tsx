@@ -11,16 +11,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { API_BASE_URL } from './src/config';
+import { authApi } from './src/api/auth';
+import type { User } from './src/api/auth';
 import { LoginScreen } from './src/screens/auth/LoginScreen';
 import { RegisterScreen } from './src/screens/auth/RegisterScreen';
 import { HomeScreen } from './src/screens/home/HomeScreen';
-
-type User = {
-  id: number;
-  name: string;
-  email: string;
-};
 
 type RootState = {
   authStatus: 'checking' | 'loggedOut' | 'loggedIn';
@@ -84,26 +79,15 @@ function AppContent() {
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-          },
-        });
-
-        if (!response.ok) {
-          setRootState(prev => ({ ...prev, authStatus: 'loggedOut' }));
-          await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
-          return;
-        }
-
-        const data = await response.json();
+        const data = await authApi.getMe(storedToken);
         setRootState(prev => ({
           ...prev,
           token: storedToken,
-          user: data.user as User,
+          user: data.user,
           authStatus: 'loggedIn',
         }));
       } catch (_error) {
+        await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
         setRootState(prev => ({ ...prev, authStatus: 'loggedOut' }));
       }
     };

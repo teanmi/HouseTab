@@ -2,26 +2,13 @@ import React, { useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { API_BASE_URL } from '../../config';
-
-type User = {
-  id: number;
-  name: string;
-  email: string;
-};
+import { authApi } from '../../api/auth';
+import type { User } from '../../api/auth';
 
 type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
 };
-
-async function parseApiResponse(response: Response) {
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(body?.message || 'Request failed');
-  }
-  return body;
-}
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'> & {
   onAuthSuccess: (nextToken: string, nextUser: User) => Promise<void>;
@@ -40,13 +27,8 @@ export function LoginScreen({ navigation, onAuthSuccess }: Props) {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await parseApiResponse(response);
-      await onAuthSuccess(data.token as string, data.user as User);
+      const data = await authApi.login(email, password);
+      await onAuthSuccess(data.token, data.user);
     } catch (error) {
       Alert.alert(
         'Login failed',
