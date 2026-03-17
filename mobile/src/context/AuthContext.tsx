@@ -1,4 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../api/auth';
 import type { User } from '../api/auth';
@@ -45,10 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const data = await authApi.getMe(storedToken);
-        setToken(storedToken);
-        setUser(data.user);
-        setAuthStatus('loggedIn');
+        try {
+          const data = await authApi.getMe(storedToken);
+          setToken(storedToken);
+          setUser(data.user);
+          setAuthStatus('loggedIn');
+          return;
+        } catch (_error) {
+          const refresh = await authApi.refreshToken(storedToken);
+          await AsyncStorage.setItem(AUTH_TOKEN_KEY, refresh.token);
+          setToken(refresh.token);
+          setUser(refresh.user);
+          setAuthStatus('loggedIn');
+        }
       } catch (_error) {
         await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
         setToken(null);

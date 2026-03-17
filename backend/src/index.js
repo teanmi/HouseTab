@@ -11,7 +11,8 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET;
-const AUTO_MIGRATE = String(process.env.AUTO_MIGRATE || 'false').toLowerCase() === 'true';
+const AUTO_MIGRATE =
+  String(process.env.AUTO_MIGRATE || 'false').toLowerCase() === 'true';
 
 app.use(cors());
 app.use(express.json());
@@ -125,6 +126,41 @@ app.post('/auth/login', async (req, res) => {
     return res.json({ token, user });
   } catch (error) {
     console.error('Login error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/auth/refresh', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+    if (!token) {
+      return res.status(401).json({ message: 'Missing token' });
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+    } catch (error) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT id, name, email FROM users WHERE id = ?',
+      [payload.id],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = rows[0];
+    const nextToken = signToken(user);
+
+    return res.json({ token: nextToken, user });
+  } catch (error) {
+    console.error('Refresh token error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });

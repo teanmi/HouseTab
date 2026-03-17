@@ -40,4 +40,13 @@ export const authApi = {
       },
     });
   },
+
+  refreshToken(token: string) {
+    return requestJson<AuthResponse>(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
 };
