@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,12 @@ type User = {
   email: string;
 };
 
+type RootState = {
+  authStatus: 'checking' | 'loggedOut' | 'loggedIn';
+  user: User | null;
+  token: string | null;
+};
+
 type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
@@ -30,7 +36,7 @@ type AuthStackParamList = {
 
 const AUTH_TOKEN_KEY = 'auth_token';
 
-const Stack = createNativeStackNavigator<AuthStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -44,24 +50,30 @@ function App() {
 }
 
 function AppContent() {
-  const [authStatus, setAuthStatus] = useState<
-    'checking' | 'loggedOut' | 'loggedIn'
-  >('checking');
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [rootState, setRootState] = useState<RootState>({
+    authStatus: 'checking',
+    user: null,
+    token: null,
+  });
 
   const saveAuth = useCallback(async (nextToken: string, nextUser: User) => {
     await AsyncStorage.setItem(AUTH_TOKEN_KEY, nextToken);
-    setToken(nextToken);
-    setUser(nextUser);
-    setAuthStatus('loggedIn');
+    setRootState(prev => ({
+      ...prev,
+      token: nextToken,
+      user: nextUser,
+      authStatus: 'loggedIn',
+    }));
   }, []);
 
   const logout = useCallback(async () => {
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
-    setToken(null);
-    setUser(null);
-    setAuthStatus('loggedOut');
+    setRootState(prev => ({
+      ...prev,
+      token: null,
+      user: null,
+      authStatus: 'loggedOut',
+    }));
   }, []);
 
   useEffect(() => {
@@ -69,7 +81,7 @@ function AppContent() {
       try {
         const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
         if (!storedToken) {
-          setAuthStatus('loggedOut');
+          setRootState(prev => ({ ...prev, authStatus: 'loggedOut' }));
           return;
         }
 
@@ -80,34 +92,27 @@ function AppContent() {
         });
 
         if (!response.ok) {
-          setAuthStatus('loggedOut');
+          setRootState(prev => ({ ...prev, authStatus: 'loggedOut' }));
           await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
           return;
         }
 
         const data = await response.json();
-        setToken(storedToken);
-        setUser(data.user as User);
-        setAuthStatus('loggedIn');
+        setRootState(prev => ({
+          ...prev,
+          token: storedToken,
+          user: data.user as User,
+          authStatus: 'loggedIn',
+        }));
       } catch (_error) {
-        setAuthStatus('loggedOut');
+        setRootState(prev => ({ ...prev, authStatus: 'loggedOut' }));
       }
     };
 
     bootstrap();
   }, []);
 
-  const context = useMemo(
-    () => ({
-      saveAuth,
-      logout,
-      token,
-      user,
-    }),
-    [logout, saveAuth, token, user],
-  );
-
-  if (authStatus === 'checking') {
+  if (rootState.authStatus === 'checking') {
     return (
       <SafeAreaView style={styles.centeredContainer}>
         <ActivityIndicator size="large" />
@@ -116,24 +121,24 @@ function AppContent() {
     );
   }
 
-  if (authStatus === 'loggedIn' && context.user) {
-    return <HomeScreen user={context.user} onLogout={context.logout} />;
+  if (rootState.authStatus === 'loggedIn' && rootState.user) {
+    return <HomeScreen user={rootState.user} onLogout={logout} />;
   }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen name="Login">
+      <AuthStack.Navigator>
+        <AuthStack.Screen name="Login">
           {(props: NativeStackScreenProps<AuthStackParamList, 'Login'>) => (
-            <LoginScreen {...props} onAuthSuccess={context.saveAuth} />
+            <LoginScreen {...props} onAuthSuccess={saveAuth} />
           )}
-        </Stack.Screen>
-        <Stack.Screen name="Register">
+        </AuthStack.Screen>
+        <AuthStack.Screen name="Register">
           {(props: NativeStackScreenProps<AuthStackParamList, 'Register'>) => (
-            <RegisterScreen {...props} onAuthSuccess={context.saveAuth} />
+            <RegisterScreen {...props} onAuthSuccess={saveAuth} />
           )}
-        </Stack.Screen>
-      </Stack.Navigator>
+        </AuthStack.Screen>
+      </AuthStack.Navigator>
     </NavigationContainer>
   );
 }
