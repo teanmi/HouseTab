@@ -4,11 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { authApi } from '../../api/auth';
 import type { User } from '../../api/auth';
-
-type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
-};
+import type { AuthStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'> & {
   onAuthSuccess: (nextToken: string, nextUser: User) => Promise<void>;

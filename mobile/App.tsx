@@ -1,21 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-} from 'react-native';
+import { StatusBar, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { authApi } from './src/api/auth';
 import type { User } from './src/api/auth';
-import { LoginScreen } from './src/screens/auth/LoginScreen';
-import { RegisterScreen } from './src/screens/auth/RegisterScreen';
-import { HomeScreen } from './src/screens/home/HomeScreen';
+import { RootNavigator } from './src/navigation/RootNavigator';
 
 type RootState = {
   authStatus: 'checking' | 'loggedOut' | 'loggedIn';
@@ -23,14 +12,7 @@ type RootState = {
   token: string | null;
 };
 
-type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
-};
-
 const AUTH_TOKEN_KEY = 'auth_token';
-
-const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -95,48 +77,14 @@ function AppContent() {
     bootstrap();
   }, []);
 
-  if (rootState.authStatus === 'checking') {
-    return (
-      <SafeAreaView style={styles.centeredContainer}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.infoText}>Checking login session...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (rootState.authStatus === 'loggedIn' && rootState.user) {
-    return <HomeScreen user={rootState.user} onLogout={logout} />;
-  }
-
   return (
-    <NavigationContainer>
-      <AuthStack.Navigator>
-        <AuthStack.Screen name="Login">
-          {(props: NativeStackScreenProps<AuthStackParamList, 'Login'>) => (
-            <LoginScreen {...props} onAuthSuccess={saveAuth} />
-          )}
-        </AuthStack.Screen>
-        <AuthStack.Screen name="Register">
-          {(props: NativeStackScreenProps<AuthStackParamList, 'Register'>) => (
-            <RegisterScreen {...props} onAuthSuccess={saveAuth} />
-          )}
-        </AuthStack.Screen>
-      </AuthStack.Navigator>
-    </NavigationContainer>
+    <RootNavigator
+      authStatus={rootState.authStatus}
+      user={rootState.user}
+      onAuthSuccess={saveAuth}
+      onLogout={logout}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  centeredContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    padding: 24,
-  },
-  infoText: {
-    fontSize: 16,
-  },
-});
 
 export default App;
