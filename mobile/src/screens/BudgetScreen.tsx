@@ -31,25 +31,25 @@ type BudgetScreenProps = {
 export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
   const { userName, houseId } = route.params;
   const { token } = useAuth();
-  const [roomates, setRoomates] = useState<string[]>([]);
+  const [roommates, setRoommates] = useState<string[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [balancesVisible, setBalancesVisible] = useState(false);
-  const [isLoadingRoomates, setIsLoadingRoomates] = useState(true);
-  const [roomatesError, setRoomatesError] = useState<string | null>(null);
+  const [isLoadingRoommates, setIsLoadingRoommates] = useState(true);
+  const [roommatesError, setRoommatesError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRoomates = async () => {
+    const fetchRoommates = async () => {
       if (!token) {
-        setRoomatesError('Missing authentication token');
-        setIsLoadingRoomates(false);
+        setRoommatesError('Missing authentication token');
+        setIsLoadingRoommates(false);
         return;
       }
 
       try {
-        setIsLoadingRoomates(true);
-        setRoomatesError(null);
+        setIsLoadingRoommates(true);
+        setRoommatesError(null);
 
         const response = await fetch(`${API_BASE_URL}/houses/${houseId}`, {
           headers: {
@@ -62,27 +62,27 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         }
 
         const data = await response.json();
-        const fetchedRoomates = (data.members || [])
+        const fetchedRoommates = (data.members || [])
           .map((member: { name: string }) => member.name)
           .filter((name: string) => name && name !== userName);
 
-        setRoomates(fetchedRoomates);
+        setRoommates(fetchedRoommates);
       } catch (err) {
-        setRoomatesError(err instanceof Error ? err.message : 'Unknown error');
-        setRoomates([]);
+        setRoommatesError(err instanceof Error ? err.message : 'Unknown error');
+        setRoommates([]);
       } finally {
-        setIsLoadingRoomates(false);
+        setIsLoadingRoommates(false);
       }
     };
 
-    fetchRoomates();
+    fetchRoommates();
   }, [houseId, token, userName]);
 
   const total = expenses
     .filter(e => e.type !== 'settlement')
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const users = [userName, ...roomates];
+  const users = [userName, ...roommates];
 
   const balances: Record<string, number> = {};
   users.forEach(user => (balances[user] = 0));
@@ -147,7 +147,7 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     splitWith?: string[],
     date?: string,
   ) => {
-    if (splitType === 'everyone' && (isLoadingRoomates || users.length < 2)) {
+    if (splitType === 'everyone' && (isLoadingRoommates || users.length < 2)) {
       Alert.alert(
         'Roommates not ready',
         'Please wait for roommates to load before splitting with everyone.',
@@ -178,8 +178,7 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         amount: parseFloat(amount),
         paidBy,
         splitType: splitType as any,
-        splitWith:
-          splitWith ?? (splitType === 'everyone' ? users : []),
+        splitWith: splitWith ?? (splitType === 'everyone' ? users : []),
         date,
       };
 
@@ -209,7 +208,7 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
       <Text style={styles.title}>Budget</Text>
       <Text style={styles.subtitle}>Welcome {userName}</Text>
 
-      {isLoadingRoomates && (
+      {isLoadingRoommates && (
         <View
           style={{
             flexDirection: 'row',
@@ -222,9 +221,9 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         </View>
       )}
 
-      {!!roomatesError && (
+      {!!roommatesError && (
         <Text style={{ color: '#d32f2f', marginBottom: 8 }}>
-          {roomatesError}
+          {roommatesError}
         </Text>
       )}
 
