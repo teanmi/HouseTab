@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Text, FlatList, View, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { NavigationProp, RouteProp } from "@react-navigation/native";
 import { nanoid } from "nanoid/non-secure";
 
 import ExpenseItem from "../components/ExpenseItem";
@@ -9,10 +10,17 @@ import PressableButton from "../components/PressableButton";
 
 import { Expense } from "../types/Expense";
 import { styles } from "../styles/budgetStyles";
+import type { AppStackParamList } from "../navigation/types";
 
 import BalancesModal from "../components/BalancesModal";
 
-function BudgetScreen({ userName, roomates, onBack }: any) {
+type BudgetScreenProps = {
+  navigation: NavigationProp<AppStackParamList, "Budget">;
+  route: RouteProp<AppStackParamList, "Budget">;
+};
+
+export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
+  const { userName, roomates } = route.params;
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -171,7 +179,7 @@ function BudgetScreen({ userName, roomates, onBack }: any) {
         />
         <PressableButton
           title="Back"
-          onPress={onBack}
+          onPress={() => navigation.goBack()}
         />
       </View>
 
@@ -196,5 +204,3 @@ function BudgetScreen({ userName, roomates, onBack }: any) {
     </SafeAreaView>
   );
 }
-
-export default BudgetScreen;

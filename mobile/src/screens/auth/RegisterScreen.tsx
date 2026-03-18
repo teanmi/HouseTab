@@ -1,0 +1,99 @@
+import React, { useState } from 'react';
+import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { authApi } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
+import type { AuthStackParamList } from '../../navigation/types';
+
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+
+export function RegisterScreen({ navigation }: Props) {
+  const { saveAuth } = useAuth();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!name || !email || !password) {
+      Alert.alert('Missing fields', 'Please enter name, email, and password.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const data = await authApi.register(name, email, password);
+      await saveAuth(data.token, data.user);
+    } catch (error) {
+      Alert.alert(
+        'Registration failed',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.screenContainer}>
+      <Text style={styles.title}>Register</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Name"
+        value={name}
+        onChangeText={setName}
+      />
+      <TextInput
+        style={styles.input}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+      />
+      <TextInput
+        style={styles.input}
+        secureTextEntry
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+      />
+      <Button
+        title={isLoading ? 'Creating account...' : 'Create Account'}
+        onPress={handleRegister}
+        disabled={isLoading}
+      />
+      <View style={styles.spacer} />
+      <Button
+        title="Back to login"
+        onPress={() => navigation.navigate('Login')}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    gap: 12,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#cccccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  spacer: {
+    height: 8,
+  },
+});

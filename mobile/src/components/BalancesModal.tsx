@@ -124,9 +124,12 @@ const BalancesModal = ({ visible, onClose, balances, settlements, onSettle }: Pr
             {settlements.map((s, i) => {
 
               const parts = s.split(" ");
-              const payer = parts[0];
-              const receiver = parts[2];
-              const amount = parseFloat(parts[3].replace("$", ""));
+              const payLocation = parts.findIndex((p) => p === "pays");
+              const payer = parts.slice(0, payLocation).join(" ");
+              const receiver = parts.slice(payLocation + 1, parts.length - 1).join(" ");
+              const amount = parseFloat(parts.slice(-1)[0].replace("$", ""));
+
+              console.log({ s, payer, receiver, amount });
 
               return (
                 <View
