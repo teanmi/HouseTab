@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('./db');
 const { runMigrations } = require('./migrations');
+const HouseService = require('./services/houseService');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -15,7 +16,8 @@ const AUTO_MIGRATE =
   String(process.env.AUTO_MIGRATE || 'false').toLowerCase() === 'true';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 function signToken(user) {
   return jwt.sign(
@@ -179,6 +181,124 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Auth me error:', error);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// HOUSE ENDPOINTS
+// ============================================================================
+
+const houseService = new HouseService(pool);
+
+/**
+ * POST /houses - Create a new house
+ * Body: { name: string }
+ * Returns: { id, name, join_code, created_by }
+ */
+app.post('/houses', authMiddleware, async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'House name is required' });
+    }
+
+    const house = await houseService.createHouse(req.user.id, name);
+    return res.status(201).json({ house });
+  } catch (error) {
+    console.error('Create house error:', error);
+    return res
+      .status(500)
+      .json({ message: error.message || 'Failed to create house' });
+  }
+});
+
+/**
+ * POST /houses/join - Join a house using join code
+ * Body: { join_code: string }
+ * Returns: { house: Object }
+ */
+app.post('/houses/join', authMiddleware, async (req, res) => {
+  try {
+    const joinCode = req.body?.join_code;
+
+    if (!joinCode || typeof joinCode !== 'string') {
+      console.error('Invalid join_code in request body:', {
+        body: req.body,
+        join_code: joinCode,
+      });
+      return res.status(400).json({ message: 'Join code is required and must be a string' });
+    }
+
+    const house = await houseService.joinHouseByCode(req.user.id, joinCode);
+    return res.status(200).json({ house, success: true });
+  } catch (error) {
+    console.error('Join house error:', error);
+    const statusCode = error.message.includes('already a member') ? 409 : 400;
+    return res
+      .status(statusCode)
+      .json({ message: error.message || 'Failed to join house' });
+  }
+});
+
+/**
+ * POST /houses/:id/regenerate-code - Regenerate join code (owner only)
+ * Returns: { join_code: string }
+ */
+app.post('/houses/:id/regenerate-code', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const newJoinCode = await houseService.regenerateJoinCode(id, req.user.id);
+    return res.json({ join_code: newJoinCode });
+  } catch (error) {
+    console.error('Regenerate code error:', error);
+    const statusCode = error.message.includes('owner') ? 403 : 500;
+    return res
+      .status(statusCode)
+      .json({ message: error.message || 'Failed to regenerate code' });
+  }
+});
+
+/**
+ * GET /houses - Get all houses for current user
+ * Returns: { houses: Array }
+ */
+app.get('/houses', authMiddleware, async (req, res) => {
+  try {
+    const houses = await houseService.getUserHouses(req.user.id);
+    return res.json({ houses });
+  } catch (error) {
+    console.error('Get houses error:', error);
+    return res.status(500).json({ message: 'Failed to fetch houses' });
+  }
+});
+
+/**
+ * GET /houses/:id - Get house details with members
+ * Returns: { house: Object, members: Array }
+ */
+app.get('/houses/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user is member of this house
+    const isMember = await houseService.isUserMember(req.user.id, id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'You do not have access to this house' });
+    }
+
+    const house = await houseService.getHouseById(id);
+    if (!house) {
+      return res.status(404).json({ message: 'House not found' });
+    }
+
+    const members = await houseService.getHouseMembers(id);
+
+    return res.json({ house, members });
+  } catch (error) {
+    console.error('Get house error:', error);
+    return res.status(500).json({ message: 'Failed to fetch house' });
   }
 });
 

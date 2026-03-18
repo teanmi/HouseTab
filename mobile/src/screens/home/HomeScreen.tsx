@@ -8,22 +8,27 @@ import type { AppStackParamList } from '../../navigation/types';
 
 export function HomeScreen() {
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const roomates = ['roomate1', 'roomate2', 'roomate3'];
 
-  if (!user) {
+  if (!user || !token) {
     return null;
   }
 
   return (
     <SafeAreaView style={styles.screenContainer}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.infoText}>Welcome, {user.name}</Text>
+      <Text style={styles.title}>Welcome, {user.name}</Text>
       <Text style={styles.infoText}>{user.email}</Text>
       <View style={styles.spacer} />
       <Button
+        title="View Houses"
+        onPress={() => navigation.navigate('HouseList', { token: token })}
+      />
+      <Button
         title="Open Budget"
-        onPress={() => navigation.navigate('Budget', { userName: user.name, roomates })}
+        onPress={() =>
+          navigation.navigate('Budget', { userName: user.name, roomates })
+        }
       />
       <Button title="Logout" onPress={logout} />
     </SafeAreaView>
@@ -49,3 +54,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+
+// const handleSelectHouse = (house: House) => {
+//     setSelectedHouse(house);
+//     setCurrentScreen('details');
+//   };
+
+//   const handleHouseCreated = (_house: any) => {
+//     setCurrentScreen('list');
+//   };
+
+//   const handleHouseJoined = (_house: any) => {
+//     setCurrentScreen('list');
+//   };
+
+//   const handleBackToList = () => {
+//     setCurrentScreen('list');
+//     setSelectedHouse(null);
+//   };
