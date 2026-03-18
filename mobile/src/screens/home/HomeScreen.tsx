@@ -9,7 +9,6 @@ import type { AppStackParamList } from '../../navigation/types';
 export function HomeScreen() {
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { user, token, logout } = useAuth();
-  const roomates = ['roomate1', 'roomate2', 'roomate3'];
 
   if (!user || !token) {
     return null;
@@ -22,13 +21,7 @@ export function HomeScreen() {
       <View style={styles.spacer} />
       <Button
         title="View Houses"
-        onPress={() => navigation.navigate('HouseList', { token: token })}
-      />
-      <Button
-        title="Open Budget"
-        onPress={() =>
-          navigation.navigate('Budget', { userName: user.name, roomates })
-        }
+        onPress={() => navigation.navigate('HouseList')}
       />
       <Button title="Logout" onPress={logout} />
     </SafeAreaView>

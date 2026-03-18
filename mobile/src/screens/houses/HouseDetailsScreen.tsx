@@ -36,12 +36,16 @@ type Member = {
 export const HouseDetailsScreen = () => {
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const route = useRoute<RouteProp<AppStackParamList, 'HouseDetails'>>();
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const { houseId } = route.params;
   const [house, setHouse] = useState<House | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  if (!user || !token) {
+    return null;
+  }
 
   useEffect(() => {
     fetchHouseDetails();
@@ -139,12 +143,18 @@ export const HouseDetailsScreen = () => {
             data={members}
             renderItem={renderMemberItem}
             keyExtractor={item => item.id.toString()}
-            scrollEnabled={false}
+        scrollEnabled={false}
           />
         )}
       </View>
 
       <View style={styles.actionContainer}>
+        <Button
+            title="Open Budget"
+            onPress={() =>
+            navigation.navigate('Budget', { userName: user.name, houseId })
+            }
+        />
         <Button
           title="Share Join Code"
           onPress={handleShareCode}

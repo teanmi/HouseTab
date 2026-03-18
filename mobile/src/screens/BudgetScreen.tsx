@@ -1,43 +1,93 @@
-import React, { useState } from "react";
-import { Text, FlatList, View, Pressable } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import type { NavigationProp, RouteProp } from "@react-navigation/native";
-import { nanoid } from "nanoid/non-secure";
+import React, { useEffect, useState } from 'react';
+import {
+  Text,
+  FlatList,
+  View,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
+import { nanoid } from 'nanoid/non-secure';
 
-import ExpenseItem from "../components/ExpenseItem";
-import ExpenseModal from "../components/ExpenseModal";
-import PressableButton from "../components/PressableButton";
+import ExpenseItem from '../components/ExpenseItem';
+import ExpenseModal from '../components/ExpenseModal';
+import PressableButton from '../components/PressableButton';
 
-import { Expense } from "../types/Expense";
-import { styles } from "../styles/budgetStyles";
-import type { AppStackParamList } from "../navigation/types";
+import { Expense } from '../types/Expense';
+import { styles } from '../styles/budgetStyles';
+import type { AppStackParamList } from '../navigation/types';
+import { API_BASE_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 
-import BalancesModal from "../components/BalancesModal";
+import BalancesModal from '../components/BalancesModal';
 
 type BudgetScreenProps = {
-  navigation: NavigationProp<AppStackParamList, "Budget">;
-  route: RouteProp<AppStackParamList, "Budget">;
+  navigation: NavigationProp<AppStackParamList, 'Budget'>;
+  route: RouteProp<AppStackParamList, 'Budget'>;
 };
 
 export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
-  const { userName, roomates } = route.params;
-
+  const { userName, houseId } = route.params;
+  const { token } = useAuth();
+  const [roomates, setRoomates] = useState<string[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [balancesVisible, setBalancesVisible] = useState(false);
+  const [isLoadingRoomates, setIsLoadingRoomates] = useState(true);
+  const [roomatesError, setRoomatesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRoomates = async () => {
+      if (!token) {
+        setRoomatesError('Missing authentication token');
+        setIsLoadingRoomates(false);
+        return;
+      }
+
+      try {
+        setIsLoadingRoomates(true);
+        setRoomatesError(null);
+
+        const response = await fetch(`${API_BASE_URL}/houses/${houseId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch roommates');
+        }
+
+        const data = await response.json();
+        const fetchedRoomates = (data.members || [])
+          .map((member: { name: string }) => member.name)
+          .filter((name: string) => name && name !== userName);
+
+        setRoomates(fetchedRoomates);
+      } catch (err) {
+        setRoomatesError(err instanceof Error ? err.message : 'Unknown error');
+        setRoomates([]);
+      } finally {
+        setIsLoadingRoomates(false);
+      }
+    };
+
+    fetchRoomates();
+  }, [houseId, token, userName]);
 
   const total = expenses
-    .filter(e => e.type !== "settlement")
+    .filter(e => e.type !== 'settlement')
     .reduce((sum, e) => sum + e.amount, 0);
 
   const users = [userName, ...roomates];
 
   const balances: Record<string, number> = {};
-  users.forEach(user => balances[user] = 0);
+  users.forEach(user => (balances[user] = 0));
 
   expenses.forEach(expense => {
-
     if (!expense.splitWith || expense.splitWith.length === 0) return;
 
     const share = expense.amount / expense.splitWith.length;
@@ -47,11 +97,9 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     });
 
     balances[expense.paidBy] += expense.amount;
-
   });
 
   function calculateSettlements(balances: Record<string, number>) {
-
     const debtors: { name: string; amount: number }[] = [];
     const creditors: { name: string; amount: number }[] = [];
 
@@ -63,13 +111,14 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     const settlements: string[] = [];
 
     while (debtors.length && creditors.length) {
-
       const debtor = debtors[0];
       const creditor = creditors[0];
 
       const payment = Math.min(debtor.amount, creditor.amount);
 
-      settlements.push(`${debtor.name} pays ${creditor.name} $${payment.toFixed(2)}`);
+      settlements.push(
+        `${debtor.name} pays ${creditor.name} $${payment.toFixed(2)}`,
+      );
 
       debtor.amount -= payment;
       creditor.amount -= payment;
@@ -85,11 +134,10 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
 
   const deleteExpense = (id: string) => {
     setExpenses(prev => prev.filter(e => e.id !== id));
-    setEditingExpense(null)
+    setEditingExpense(null);
   };
 
-
-  type SplitType = "everyone" | "individual" | "none";
+  type SplitType = 'everyone' | 'individual' | 'none';
 
   const handleSaveExpense = (
     name: string,
@@ -97,16 +145,31 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     paidBy: string,
     splitType: SplitType,
     splitWith?: string[],
-    date?: string
+    date?: string,
   ) => {
+    if (splitType === 'everyone' && (isLoadingRoomates || users.length < 2)) {
+      Alert.alert(
+        'Roommates not ready',
+        'Please wait for roommates to load before splitting with everyone.',
+      );
+      return;
+    }
 
     if (editingExpense) {
-      setExpenses((prev) =>
-        prev.map((e) =>
+      setExpenses(prev =>
+        prev.map(e =>
           e.id === editingExpense.id
-            ? { ...e, name, amount: Number(amount), paidBy, splitType, splitWith, date }
-            : e
-        )
+            ? {
+                ...e,
+                name,
+                amount: Number(amount),
+                paidBy,
+                splitType,
+                splitWith,
+                date,
+              }
+            : e,
+        ),
       );
     } else {
       const newExpense: Expense = {
@@ -115,8 +178,9 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         amount: parseFloat(amount),
         paidBy,
         splitType: splitType as any,
-        splitWith: splitWith ?? (splitType === "everyone" ? [userName, ...roomates] : []),
-        date
+        splitWith:
+          splitWith ?? (splitType === 'everyone' ? users : []),
+        date,
       };
 
       setExpenses(prev => [...prev, newExpense]);
@@ -126,16 +190,15 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
   };
 
   const handleSettle = (payer: string, receiver: string, amount: number) => {
-
     const settlement: Expense = {
       id: nanoid(),
-      name: "Settlement",
+      name: 'Settlement',
       amount,
       paidBy: payer,
-      splitType: "none",
+      splitType: 'none',
       splitWith: [receiver],
       date: new Date().toISOString(),
-      type: "settlement",
+      type: 'settlement',
     };
 
     setExpenses(prev => [...prev, settlement]);
@@ -143,31 +206,47 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
 
   return (
     <SafeAreaView style={styles.container}>
-
       <Text style={styles.title}>Budget</Text>
       <Text style={styles.subtitle}>Welcome {userName}</Text>
 
-      <Text style={styles.total}>
-        Total: ${total.toFixed(2)}
-      </Text>
+      {isLoadingRoomates && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <ActivityIndicator size="small" />
+          <Text style={{ marginLeft: 8 }}>Loading roommates...</Text>
+        </View>
+      )}
+
+      {!!roomatesError && (
+        <Text style={{ color: '#d32f2f', marginBottom: 8 }}>
+          {roomatesError}
+        </Text>
+      )}
+
+      <Text style={styles.total}>Total: ${total.toFixed(2)}</Text>
 
       <FlatList
-        data={expenses.filter(e => e.type !== "settlement")}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) =>
+        data={expenses.filter(e => e.type !== 'settlement')}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
           <Pressable
             onPress={() => {
               setEditingExpense(item);
               setModalVisible(true);
             }}
           >
-            <ExpenseItem item={item} onDelete={deleteExpense}/>
+            <ExpenseItem item={item} onDelete={deleteExpense} />
           </Pressable>
-        }
+        )}
       />
 
       <View style={styles.spacer} />
-      
+
       <View style={styles.buttonGroup}>
         <PressableButton
           title="Add Expense"
@@ -177,10 +256,7 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
           title="Balances"
           onPress={() => setBalancesVisible(true)}
         />
-        <PressableButton
-          title="Back"
-          onPress={() => navigation.goBack()}
-        />
+        <PressableButton title="Back" onPress={() => navigation.goBack()} />
       </View>
 
       <ExpenseModal
@@ -200,7 +276,6 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         settlements={settlements}
         onSettle={handleSettle}
       />
-
     </SafeAreaView>
   );
 }

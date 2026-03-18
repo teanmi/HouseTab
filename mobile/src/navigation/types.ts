@@ -11,7 +11,7 @@ export type AppStackParamList = {
   HouseDetails: { houseId: number };
   Budget: {
     userName: string;
-    roomates: string[];
+    houseId: number;
   };
   
 };
