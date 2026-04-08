@@ -63,7 +63,6 @@ const ExpenseItem = ({ item, onDelete }: Props) => {
           <Text style={styles.expenseName}>{item.name}</Text>
           <Text style={styles.expenseMeta}>{formattedDate} Paid by {item.paidBy}</Text>
         </View>
-
         <Text style={styles.expenseAmount}>${item.amount}</Text>
       </View>
     </ReanimatedSwipeable>

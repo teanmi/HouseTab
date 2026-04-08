@@ -15,6 +15,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 import PressableButton from "./PressableButton";
 import { styles } from "../styles/budgetStyles";
+import { useTheme } from "../context/ThemeContext";
 import { Expense } from "../types/Expense";
 
 type Props = {
@@ -33,6 +34,7 @@ type Props = {
 };
 
 const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props) => {
+  const { theme } = useTheme();
 
   const [expenseName, setExpenseName] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
@@ -162,12 +164,14 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
             <TextInput
               style={styles.input}
               placeholder="Expense Name"
+              placeholderTextColor={theme.placeholderText}
               value={expenseName}
               onChangeText={setExpenseName}
             />
             <TextInput
               style={styles.input}
               placeholder="Amount"
+              placeholderTextColor={theme.placeholderText}
               keyboardType="numeric"
               value={expenseAmount}
               onChangeText={(text) => {
