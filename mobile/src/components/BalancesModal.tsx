@@ -1,5 +1,5 @@
-import React from "react";
-import { Modal, View, Text, FlatList } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Modal, View, Text } from "react-native";
 import PressableButton from "./PressableButton";
 import { styles } from "../styles/budgetStyles";
 import { ScrollView } from "react-native";
@@ -9,10 +9,36 @@ type Props = {
   onClose: () => void;
   balances: Record<string, number>;
   settlements: string[];
-  onSettle: (payer: string, receiver: string, amount: number) => void;
+  onSettle: (payer: string, receiver: string, amount: number) => Promise<boolean>;
 };
 
 const BalancesModal = ({ visible, onClose, balances, settlements, onSettle }: Props) => {
+  const [dismissedSettlements, setDismissedSettlements] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!visible) {
+      setDismissedSettlements([]);
+    }
+  }, [visible]);
+
+  const parseSettlement = (settlement: string) => {
+    const parts = settlement.split(" ");
+    const payLocation = parts.findIndex((part) => part === "pays");
+    const payer = parts.slice(0, payLocation).join(" ");
+    const receiver = parts.slice(payLocation + 1, parts.length - 1).join(" ");
+    const amount = parseFloat(parts.slice(-1)[0].replace("$", ""));
+
+    return { payer, receiver, amount };
+  };
+
+  const getSettlementKey = (settlement: string) => {
+    const { payer, receiver, amount } = parseSettlement(settlement);
+    return `${payer}|${receiver}|${amount.toFixed(2)}`;
+  };
+
+  const visibleSettlements = settlements.filter(
+    (settlement) => !dismissedSettlements.includes(getSettlementKey(settlement)),
+  );
 
   const renderBalance = ([user, balance]: [string, number]) => {
 
@@ -71,7 +97,7 @@ const BalancesModal = ({ visible, onClose, balances, settlements, onSettle }: Pr
               Settle Up
             </Text>
 
-            {settlements.length === 0 && (
+            {visibleSettlements.length === 0 && (
               <Text style={{ color: "#777" }}>Everyone is settled up 👍</Text>
             )}
             <Text style={[styles.modalTitle, { marginTop: 10 }]}>
@@ -121,19 +147,12 @@ const BalancesModal = ({ visible, onClose, balances, settlements, onSettle }: Pr
                 </View>
               );
             })}
-            {settlements.map((s, i) => {
-
-              const parts = s.split(" ");
-              const payLocation = parts.findIndex((p) => p === "pays");
-              const payer = parts.slice(0, payLocation).join(" ");
-              const receiver = parts.slice(payLocation + 1, parts.length - 1).join(" ");
-              const amount = parseFloat(parts.slice(-1)[0].replace("$", ""));
-
-              console.log({ s, payer, receiver, amount });
+            {visibleSettlements.map((settlement, i) => {
+              const { payer, receiver, amount } = parseSettlement(settlement);
 
               return (
                 <View
-                  key={i}
+                  key={getSettlementKey(settlement) || String(i)}
                   style={{
                     backgroundColor: "#fff",
                     padding: 12,
@@ -149,7 +168,15 @@ const BalancesModal = ({ visible, onClose, balances, settlements, onSettle }: Pr
 
                   <PressableButton
                     title="Settle Up"
-                    onPress={() => onSettle(payer, receiver, amount)}
+                    onPress={async () => {
+                      const wasSettled = await onSettle(payer, receiver, amount);
+                      if (wasSettled) {
+                        setDismissedSettlements((current) => [
+                          ...current,
+                          getSettlementKey(settlement),
+                        ]);
+                      }
+                    }}
                   />
                 </View>
               );

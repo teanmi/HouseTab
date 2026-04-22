@@ -9,6 +9,7 @@ const { pool } = require('./db');
 const { runMigrations } = require('./migrations');
 const AccountService = require('./services/accountService');
 const HouseService = require('./services/houseService');
+const ExpenseService = require('./services/expenseService');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -230,6 +231,85 @@ app.post('/delete-account', async (req, res) => {
 // ============================================================================
 
 const houseService = new HouseService(pool);
+const expenseService = new ExpenseService(pool);
+
+const ALLOWED_SPLIT_TYPES = new Set(['everyone', 'individual', 'none']);
+const ALLOWED_EXPENSE_TYPES = new Set(['expense', 'settlement']);
+
+function parsePositiveInt(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function parseExpensePayload(body) {
+  const rawName = body?.name ?? body?.title;
+  const name = typeof rawName === 'string' ? rawName.trim() : '';
+  if (!name) {
+    return { error: 'Expense name is required' };
+  }
+
+  const amount = Number(body?.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { error: 'Amount must be a positive number' };
+  }
+
+  const paidBy = typeof body?.paidBy === 'string' ? body.paidBy.trim() : '';
+  if (!paidBy) {
+    return { error: 'Paid by is required' };
+  }
+
+  const splitType = body?.splitType || 'everyone';
+  if (!ALLOWED_SPLIT_TYPES.has(splitType)) {
+    return { error: 'Invalid split type' };
+  }
+
+  let splitWith = [];
+  if (body?.splitWith !== undefined) {
+    if (!Array.isArray(body.splitWith)) {
+      return { error: 'Split with must be an array' };
+    }
+    splitWith = body.splitWith
+      .filter((value) => typeof value === 'string' && value.trim())
+      .map((value) => value.trim());
+  }
+
+  const type = body?.type || 'expense';
+  if (!ALLOWED_EXPENSE_TYPES.has(type)) {
+    return { error: 'Invalid expense type' };
+  }
+
+  let expenseDate = null;
+  if (body?.date) {
+    expenseDate = new Date(body.date);
+    if (Number.isNaN(expenseDate.getTime())) {
+      return { error: 'Invalid date' };
+    }
+  }
+
+  let category = null;
+  if (body?.category !== undefined && body?.category !== null) {
+    if (typeof body.category !== 'string') {
+      return { error: 'Category must be a string' };
+    }
+    category = body.category.trim() || null;
+  }
+
+  return {
+    value: {
+      name,
+      amount,
+      paidBy,
+      splitType,
+      splitWith,
+      expenseDate,
+      category,
+      type,
+    },
+  };
+}
 
 /**
  * POST /houses - Create a new house
@@ -340,6 +420,148 @@ app.get('/houses/:id', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Get house error:', error);
     return res.status(500).json({ message: 'Failed to fetch house' });
+  }
+});
+
+// ============================================================================
+// EXPENSE ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /expenses?houseId=123 - Get all expenses for a house
+ * Returns: { expenses: Array }
+ */
+app.get('/expenses', authMiddleware, async (req, res) => {
+  try {
+    const houseId = parsePositiveInt(req.query.houseId);
+
+    if (!houseId) {
+      return res.status(400).json({ message: 'houseId is required' });
+    }
+
+    const isMember = await houseService.isUserMember(req.user.id, houseId);
+    if (!isMember) {
+      return res.status(403).json({ message: 'You do not have access to this house' });
+    }
+
+    const expenses = await expenseService.getExpensesByHouse(houseId);
+    return res.json({ expenses });
+  } catch (error) {
+    console.error('Get expenses error:', error);
+    return res.status(500).json({ message: 'Failed to fetch expenses' });
+  }
+});
+
+/**
+ * POST /expenses - Create a new expense
+ * Body: { houseId, name/title, amount, paidBy, splitType, splitWith?, date?, category?, type? }
+ * Returns: { expense: Object }
+ */
+app.post('/expenses', authMiddleware, async (req, res) => {
+  try {
+    const houseId = parsePositiveInt(req.body?.houseId);
+    if (!houseId) {
+      return res.status(400).json({ message: 'houseId is required' });
+    }
+
+    const isMember = await houseService.isUserMember(req.user.id, houseId);
+    if (!isMember) {
+      return res.status(403).json({ message: 'You do not have access to this house' });
+    }
+
+    const parsed = parseExpensePayload(req.body);
+    if (parsed.error) {
+      return res.status(400).json({ message: parsed.error });
+    }
+
+    const expense = await expenseService.createExpense({
+      houseId,
+      createdBy: req.user.id,
+      ...parsed.value,
+    });
+
+    return res.status(201).json({ expense });
+  } catch (error) {
+    console.error('Create expense error:', error);
+    return res
+      .status(500)
+      .json({ message: error.message || 'Failed to create expense' });
+  }
+});
+
+/**
+ * PUT /expenses/:id - Update an expense
+ * Body: { houseId, name/title, amount, paidBy, splitType, splitWith?, date?, category?, type? }
+ * Returns: { expense: Object }
+ */
+app.put('/expenses/:id', authMiddleware, async (req, res) => {
+  try {
+    const expenseId = parsePositiveInt(req.params.id);
+    if (!expenseId) {
+      return res.status(400).json({ message: 'Invalid expense id' });
+    }
+
+    const houseId = parsePositiveInt(req.body?.houseId);
+    if (!houseId) {
+      return res.status(400).json({ message: 'houseId is required' });
+    }
+
+    const isMember = await houseService.isUserMember(req.user.id, houseId);
+    if (!isMember) {
+      return res.status(403).json({ message: 'You do not have access to this house' });
+    }
+
+    const parsed = parseExpensePayload(req.body);
+    if (parsed.error) {
+      return res.status(400).json({ message: parsed.error });
+    }
+
+    const expense = await expenseService.updateExpense(expenseId, houseId, parsed.value);
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    return res.json({ expense });
+  } catch (error) {
+    console.error('Update expense error:', error);
+    return res
+      .status(500)
+      .json({ message: error.message || 'Failed to update expense' });
+  }
+});
+
+/**
+ * DELETE /expenses/:id?houseId=123 - Delete an expense
+ * Returns: { success: true }
+ */
+app.delete('/expenses/:id', authMiddleware, async (req, res) => {
+  try {
+    const expenseId = parsePositiveInt(req.params.id);
+    if (!expenseId) {
+      return res.status(400).json({ message: 'Invalid expense id' });
+    }
+
+    const houseId = parsePositiveInt(req.query.houseId);
+    if (!houseId) {
+      return res.status(400).json({ message: 'houseId is required' });
+    }
+
+    const isMember = await houseService.isUserMember(req.user.id, houseId);
+    if (!isMember) {
+      return res.status(403).json({ message: 'You do not have access to this house' });
+    }
+
+    const deleted = await expenseService.deleteExpense(expenseId, houseId);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Delete expense error:', error);
+    return res
+      .status(500)
+      .json({ message: error.message || 'Failed to delete expense' });
   }
 });
 
