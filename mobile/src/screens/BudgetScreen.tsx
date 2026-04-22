@@ -105,9 +105,7 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     fetchExpenses();
   }, [houseId, token]);
 
-  const total = expenses
-    .filter(e => e.type !== 'settlement')
-    .reduce((sum, e) => sum + e.amount, 0);
+  const total = expenses.filter(e => e.type !== 'settlement').reduce((sum, e) => sum + e.amount, 0);
 
   const users = [userName, ...roommates];
 
@@ -259,10 +257,10 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     payer: string,
     receiver: string,
     amount: number,
-  ) => {
+  ): Promise<boolean> => {
     if (!token) {
       Alert.alert('Not authenticated', 'Please log in again.');
-      return;
+      return false;
     }
 
     try {
@@ -278,11 +276,13 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
       });
 
       setExpenses(prev => [...prev, response.expense]);
+      return true;
     } catch (err) {
       Alert.alert(
         'Unable to record settlement',
         err instanceof Error ? err.message : 'Unknown error',
       );
+      return false;
     }
   };
 
