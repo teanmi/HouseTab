@@ -28,7 +28,7 @@ type Props = {
     splitType: "everyone" | "individual" | "none",
     splitWith?: string[],
     date?: string
-  ) => void;
+  ) => Promise<boolean>;
   users: string[];
   expenseToEdit?: Expense | null;
 };
@@ -87,7 +87,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
   }, [expenseToEdit]);
 
 
-  const handleSave = () => {
+  const handleSave = async () => {
 
     const parsedAmount = parseFloat(expenseAmount);
 
@@ -96,7 +96,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
       return;
     }
 
-    onSave(
+    const didSave = await onSave(
       expenseName,
       parsedAmount.toString(),
       paidBy,
@@ -105,7 +105,9 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
       date ? date.toISOString() : "",
     );
 
-    resetForm();
+    if (didSave) {
+      resetForm();
+    }
   };
 
   const resetForm = () => {

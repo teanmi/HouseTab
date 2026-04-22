@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
-import { nanoid } from 'nanoid/non-secure';
 
 import ExpenseItem from '../components/ExpenseItem';
 import ExpenseModal from '../components/ExpenseModal';
@@ -20,6 +19,7 @@ import { styles } from '../styles/budgetStyles';
 import type { AppStackParamList } from '../navigation/types';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import { expenseApi } from '../api/expenses';
 
 import BalancesModal from '../components/BalancesModal';
 
@@ -38,6 +38,8 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
   const [balancesVisible, setBalancesVisible] = useState(false);
   const [isLoadingRoommates, setIsLoadingRoommates] = useState(true);
   const [roommatesError, setRoommatesError] = useState<string | null>(null);
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(true);
+  const [expensesError, setExpensesError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRoommates = async () => {
@@ -77,6 +79,31 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
 
     fetchRoommates();
   }, [houseId, token, userName]);
+
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      if (!token) {
+        setExpensesError('Missing authentication token');
+        setIsLoadingExpenses(false);
+        return;
+      }
+
+      try {
+        setIsLoadingExpenses(true);
+        setExpensesError(null);
+
+        const data = await expenseApi.getExpenses(token, houseId);
+        setExpenses(data.expenses || []);
+      } catch (err) {
+        setExpensesError(err instanceof Error ? err.message : 'Unknown error');
+        setExpenses([]);
+      } finally {
+        setIsLoadingExpenses(false);
+      }
+    };
+
+    fetchExpenses();
+  }, [houseId, token]);
 
   const total = expenses
     .filter(e => e.type !== 'settlement')
@@ -132,14 +159,27 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
 
   const settlements = calculateSettlements(balances);
 
-  const deleteExpense = (id: string) => {
-    setExpenses(prev => prev.filter(e => e.id !== id));
-    setEditingExpense(null);
+  const deleteExpense = async (id: string) => {
+    if (!token) {
+      Alert.alert('Not authenticated', 'Please log in again.');
+      return;
+    }
+
+    try {
+      await expenseApi.deleteExpense(token, id, houseId);
+      setExpenses(prev => prev.filter(e => String(e.id) !== String(id)));
+      setEditingExpense(null);
+    } catch (err) {
+      Alert.alert(
+        'Unable to delete expense',
+        err instanceof Error ? err.message : 'Unknown error',
+      );
+    }
   };
 
   type SplitType = 'everyone' | 'individual' | 'none';
 
-  const handleSaveExpense = (
+  const handleSaveExpense = async (
     name: string,
     amount: string,
     paidBy: string,
@@ -152,55 +192,98 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         'Roommates not ready',
         'Please wait for roommates to load before splitting with everyone.',
       );
+      return false;
+    }
+
+    if (!token) {
+      Alert.alert('Not authenticated', 'Please log in again.');
+      return false;
+    }
+
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid number.');
+      return false;
+    }
+
+    const resolvedSplitWith =
+      splitType === 'everyone'
+        ? users
+        : splitType === 'none'
+          ? []
+          : splitWith && splitWith.length > 0
+            ? splitWith
+            : [paidBy];
+
+    const payload = {
+      houseId,
+      name,
+      amount: parsedAmount,
+      paidBy,
+      splitType,
+      splitWith: resolvedSplitWith,
+      date: date || undefined,
+      type: editingExpense?.type ?? 'expense',
+    };
+
+    try {
+      if (editingExpense) {
+        const response = await expenseApi.updateExpense(
+          token,
+          String(editingExpense.id),
+          payload,
+        );
+        setExpenses(prev =>
+          prev.map(e =>
+            String(e.id) === String(editingExpense.id) ? response.expense : e,
+          ),
+        );
+      } else {
+        const response = await expenseApi.createExpense(token, payload);
+        setExpenses(prev => [...prev, response.expense]);
+      }
+
+      setModalVisible(false);
+      setEditingExpense(null);
+      return true;
+    } catch (err) {
+      Alert.alert(
+        editingExpense ? 'Unable to update expense' : 'Unable to create expense',
+        err instanceof Error ? err.message : 'Unknown error',
+      );
+      return false;
+    }
+  };
+
+  const handleSettle = async (
+    payer: string,
+    receiver: string,
+    amount: number,
+  ) => {
+    if (!token) {
+      Alert.alert('Not authenticated', 'Please log in again.');
       return;
     }
 
-    if (editingExpense) {
-      setExpenses(prev =>
-        prev.map(e =>
-          e.id === editingExpense.id
-            ? {
-                ...e,
-                name,
-                amount: Number(amount),
-                paidBy,
-                splitType,
-                splitWith,
-                date,
-              }
-            : e,
-        ),
+    try {
+      const response = await expenseApi.createExpense(token, {
+        houseId,
+        name: 'Settlement',
+        amount,
+        paidBy: payer,
+        splitType: 'none',
+        splitWith: [receiver],
+        date: new Date().toISOString(),
+        type: 'settlement',
+      });
+
+      setExpenses(prev => [...prev, response.expense]);
+    } catch (err) {
+      Alert.alert(
+        'Unable to record settlement',
+        err instanceof Error ? err.message : 'Unknown error',
       );
-    } else {
-      const newExpense: Expense = {
-        id: nanoid(),
-        name,
-        amount: parseFloat(amount),
-        paidBy,
-        splitType: splitType as any,
-        splitWith: splitWith ?? (splitType === 'everyone' ? users : []),
-        date,
-      };
-
-      setExpenses(prev => [...prev, newExpense]);
     }
-    setModalVisible(false);
-    setEditingExpense(null);
-  };
-
-  const handleSettle = (payer: string, receiver: string, amount: number) => {
-    const settlement: Expense = {
-      id: nanoid(),
-      name: 'Settlement',
-      amount,
-      paidBy: payer,
-      splitType: 'none',
-      splitWith: [receiver],
-      date: new Date().toISOString(),
-      type: 'settlement',
-    };
-
-    setExpenses(prev => [...prev, settlement]);
   };
 
   return (
@@ -227,11 +310,30 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         </Text>
       )}
 
+      {isLoadingExpenses && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <ActivityIndicator size="small" />
+          <Text style={{ marginLeft: 8 }}>Loading expenses...</Text>
+        </View>
+      )}
+
+      {!!expensesError && (
+        <Text style={{ color: '#d32f2f', marginBottom: 8 }}>
+          {expensesError}
+        </Text>
+      )}
+
       <Text style={styles.total}>Total: ${total.toFixed(2)}</Text>
 
       <FlatList
         data={expenses.filter(e => e.type !== 'settlement')}
-        keyExtractor={item => item.id}
+        keyExtractor={item => String(item.id)}
         renderItem={({ item }) => (
           <Pressable
             onPress={() => {
