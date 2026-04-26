@@ -1,31 +1,33 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../navigation/types';
 import {
   Alert,
-  Button,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
+  Pressable,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_BASE_URL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
-
-type House = {
-  id: number;
-  name: string;
-  join_code: string;
-  created_by: number;
-};
+import { useTheme } from '../../context/ThemeContext';
+import { createHouseFormStyles } from './houseStyles';
 
 export const CreateHouseScreen = () => {
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { token } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createHouseFormStyles(theme), [theme]);
   const [houseName, setHouseName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [createdHouse, setCreatedHouse] = useState<{
+    id: number;
+    name: string;
+    join_code: string;
+  } | null>(null);
 
   const handleCreateHouse = async () => {
     if (!houseName.trim()) {
@@ -49,12 +51,8 @@ export const CreateHouseScreen = () => {
       }
 
       const data = await response.json();
-
-      Alert.alert(
-        'Success',
-        `House created!\n\nShare this code with others: ${data.house.join_code}`,
-        [{ text: 'OK', onPress: () => navigation.navigate('Home') }],
-      );
+      setCreatedHouse(data.house);
+      setHouseName('');
     } catch (error) {
       Alert.alert(
         'Error',
@@ -66,110 +64,84 @@ export const CreateHouseScreen = () => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <Text style={styles.title}>Create a New House</Text>
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Create a house</Text>
+          <Text style={styles.subtitle}>
+            Set up a shared space for your group.
+          </Text>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>House Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., Sunny Apartments"
-          value={houseName}
-          onChangeText={setHouseName}
-          editable={!isLoading}
-          placeholderTextColor="#ccc"
-        />
-      </View>
-      {/* this the information field they will be add later on. */}
-      {/* <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>What's a House?</Text>
-        <Text style={styles.infoText}>
-          A house is a shared space where you and your roommates can manage expenses together.
-        </Text>
-      </View>
+        <View style={styles.panel}>
+          {createdHouse && (
+            <View style={styles.successCard}>
+              <Text style={styles.successTitle}>House created</Text>
+              <Text style={styles.successText}>
+                Share this code with others: {createdHouse.join_code}
+              </Text>
 
-      <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>Share Your Join Code</Text>
-        <Text style={styles.infoText}>
-          After creating a house, you'll get a unique 6-character code. Share this code with your roommates so they can join.
-        </Text>
-      </View> */}
+              <View style={styles.successActions}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    pressed && styles.buttonPressed,
+                  ]}
+                  onPress={() =>
+                    navigation.navigate('HouseDetails', {
+                      houseId: createdHouse.id,
+                    })
+                  }
+                >
+                  <Text style={styles.primaryButtonText}>View House</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
 
-      <View style={styles.buttonContainer}>
-        <Button
-          title={isLoading ? 'Creating...' : 'Create House'}
-          onPress={handleCreateHouse}
-          disabled={isLoading}
-          color="#1d4ed8"
-        />
-        <Button
-          title="Cancel"
-          onPress={() => navigation.navigate('Home')}
-          disabled={isLoading}
-          color="#6b7280"
-        />
-      </View>
-    </ScrollView>
+          <View style={styles.section}>
+            <Text style={styles.label}>House Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Sunny Apartments"
+              value={houseName}
+              onChangeText={setHouseName}
+              editable={!isLoading}
+              placeholderTextColor={theme.placeholderText}
+            />
+            <Text style={styles.hint}>
+              Pick a friendly name everyone will recognize.
+            </Text>
+          </View>
+
+          <View style={styles.buttonStack}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.buttonPressed,
+                isLoading && { opacity: 0.7 },
+              ]}
+              onPress={handleCreateHouse}
+              disabled={isLoading}
+            >
+              <Text style={styles.primaryButtonText}>
+                {isLoading ? 'Creating...' : 'Create House'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={() => navigation.navigate('Home')}
+              disabled={isLoading}
+            >
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 24,
-    color: '#333',
-  },
-  section: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#333',
-  },
-  infoBox: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#2196F3',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1976D2',
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#0d47a1',
-    lineHeight: 18,
-  },
-  buttonContainer: {
-    gap: 8,
-    marginTop: 16,
-  },
-});

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Text,
   FlatList,
@@ -10,18 +10,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
 
-import ExpenseItem from '../components/ExpenseItem';
-import ExpenseModal from '../components/ExpenseModal';
-import PressableButton from '../components/PressableButton';
+import ExpenseItem from '../../components/ExpenseItem';
+import ExpenseModal from '../../components/ExpenseModal';
 
-import { Expense } from '../types/Expense';
-import { styles } from '../styles/budgetStyles';
-import type { AppStackParamList } from '../navigation/types';
-import { API_BASE_URL } from '../config';
-import { useAuth } from '../context/AuthContext';
-import { expenseApi } from '../api/expenses';
+import { Expense } from '../../types/Expense';
+import { createBudgetStyles } from '../../styles/budgetStyles';
+import type { AppStackParamList } from '../../navigation/types';
+import { API_BASE_URL } from '../../config';
+import { useAuth } from '../../context/AuthContext';
+import { expenseApi } from '../../api/expenses';
+import { useTheme } from '../../context/ThemeContext';
 
-import BalancesModal from '../components/BalancesModal';
+import BalancesModal from '../../components/BalancesModal';
 
 type BudgetScreenProps = {
   navigation: NavigationProp<AppStackParamList, 'Budget'>;
@@ -31,6 +31,8 @@ type BudgetScreenProps = {
 export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
   const { userName, houseId } = route.params;
   const { token } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createBudgetStyles(theme), [theme]);
   const [roommates, setRoommates] = useState<string[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -105,7 +107,10 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     fetchExpenses();
   }, [houseId, token]);
 
-  const total = expenses.filter(e => e.type !== 'settlement').reduce((sum, e) => sum + e.amount, 0);
+  const total = expenses
+    .filter(e => e.type !== 'settlement')
+    .reduce((sum, e) => sum + e.amount, 0);
+  const visibleExpenses = expenses.filter(e => e.type !== 'settlement');
 
   const users = [userName, ...roommates];
 
@@ -208,10 +213,10 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
       splitType === 'everyone'
         ? users
         : splitType === 'none'
-          ? []
-          : splitWith && splitWith.length > 0
-            ? splitWith
-            : [paidBy];
+        ? []
+        : splitWith && splitWith.length > 0
+        ? splitWith
+        : [paidBy];
 
     const payload = {
       houseId,
@@ -246,7 +251,9 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
       return true;
     } catch (err) {
       Alert.alert(
-        editingExpense ? 'Unable to update expense' : 'Unable to create expense',
+        editingExpense
+          ? 'Unable to update expense'
+          : 'Unable to create expense',
         err instanceof Error ? err.message : 'Unknown error',
       );
       return false;
@@ -287,77 +294,101 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Budget</Text>
-      <Text style={styles.subtitle}>Welcome {userName}</Text>
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.panel}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Budget</Text>
+          <Text style={styles.subtitle}>Welcome {userName}</Text>
 
-      {isLoadingRoommates && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 8,
-          }}
-        >
-          <ActivityIndicator size="small" />
-          <Text style={{ marginLeft: 8 }}>Loading roommates...</Text>
+          <View style={styles.totalCard}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+          </View>
         </View>
-      )}
 
-      {!!roommatesError && (
-        <Text style={{ color: '#d32f2f', marginBottom: 8 }}>
-          {roommatesError}
-        </Text>
-      )}
-
-      {isLoadingExpenses && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 8,
-          }}
-        >
-          <ActivityIndicator size="small" />
-          <Text style={{ marginLeft: 8 }}>Loading expenses...</Text>
-        </View>
-      )}
-
-      {!!expensesError && (
-        <Text style={{ color: '#d32f2f', marginBottom: 8 }}>
-          {expensesError}
-        </Text>
-      )}
-
-      <Text style={styles.total}>Total: ${total.toFixed(2)}</Text>
-
-      <FlatList
-        data={expenses.filter(e => e.type !== 'settlement')}
-        keyExtractor={item => String(item.id)}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => {
-              setEditingExpense(item);
-              setModalVisible(true);
-            }}
-          >
-            <ExpenseItem item={item} onDelete={deleteExpense} />
-          </Pressable>
+        {isLoadingRoommates && (
+          <View style={styles.statusRow}>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <Text style={styles.statusText}>Loading roommates...</Text>
+          </View>
         )}
-      />
 
-      <View style={styles.spacer} />
+        {!!roommatesError && (
+          <Text style={styles.errorText}>{roommatesError}</Text>
+        )}
 
-      <View style={styles.buttonGroup}>
-        <PressableButton
-          title="Add Expense"
-          onPress={() => setModalVisible(true)}
-        />
-        <PressableButton
-          title="Balances"
-          onPress={() => setBalancesVisible(true)}
-        />
-        <PressableButton title="Back" onPress={() => navigation.goBack()} />
+        {!!expensesError && (
+          <Text style={styles.errorText}>{expensesError}</Text>
+        )}
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Expenses ({visibleExpenses.length})
+            </Text>
+          </View>
+
+          <FlatList
+            data={visibleExpenses}
+            keyExtractor={item => String(item.id)}
+            style={styles.expensesList}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              isLoadingExpenses ? (
+                <View style={styles.centeredContainer}>
+                  <ActivityIndicator size="small" color={theme.primary} />
+                  <Text style={styles.statusText}>Loading expenses...</Text>
+                </View>
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No expenses yet</Text>
+                </View>
+              )
+            }
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => {
+                  setEditingExpense(item);
+                  setModalVisible(true);
+                }}
+              >
+                <ExpenseItem item={item} onDelete={deleteExpense} />
+              </Pressable>
+            )}
+          />
+        </View>
+
+        <View style={styles.actionContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.primaryButtonText}>Add Expense</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => setBalancesVisible(true)}
+          >
+            <Text style={styles.secondaryButtonText}>Balances</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.secondaryButtonText}>Back</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ExpenseModal

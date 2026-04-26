@@ -2,7 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { HomeScreen } from '../screens/home/HomeScreen';
-import { BudgetScreen } from '../screens/BudgetScreen';
+import { BudgetScreen } from '../screens/houses/BudgetScreen';
 import { CreateHouseScreen } from '../screens/houses/CreateHouseScreen';
 import { JoinHouseScreen } from '../screens/houses/JoinHouseScreen';
 import { HouseDetailsScreen } from '../screens/houses/HouseDetailsScreen';

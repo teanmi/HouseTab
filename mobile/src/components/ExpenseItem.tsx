@@ -1,14 +1,15 @@
-import React from "react";
-import { Text, View, Pressable } from "react-native";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import React, { useMemo } from 'react';
+import { Text, View, Pressable } from 'react-native';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {
   useAnimatedStyle,
   interpolate,
   Extrapolation,
-} from "react-native-reanimated";
+} from 'react-native-reanimated';
 
-import { Expense } from "../types/Expense";
-import { styles } from "../styles/budgetStyles";
+import { Expense } from '../types/Expense';
+import { useTheme } from '../context/ThemeContext';
+import { createBudgetStyles } from '../styles/budgetStyles';
 
 type Props = {
   item: Expense;
@@ -16,22 +17,23 @@ type Props = {
 };
 
 const ExpenseItem = ({ item, onDelete }: Props) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createBudgetStyles(theme), [theme]);
 
   const renderRightActions = (progress: any, dragX: any) => {
-
     const animatedStyle = useAnimatedStyle(() => {
       const translateX = interpolate(
         dragX.value,
         [-100, 0],
         [0, 100],
-        Extrapolation.CLAMP
+        Extrapolation.CLAMP,
       );
 
       const opacity = interpolate(
         progress.value,
         [0, 1],
         [0, 1],
-        Extrapolation.CLAMP
+        Extrapolation.CLAMP,
       );
 
       return {
@@ -51,9 +53,9 @@ const ExpenseItem = ({ item, onDelete }: Props) => {
 
   const formattedDate = item.date
     ? new Date(item.date).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        })
+        month: 'short',
+        day: 'numeric',
+      })
     : null;
 
   return (
@@ -61,7 +63,9 @@ const ExpenseItem = ({ item, onDelete }: Props) => {
       <View style={styles.expenseItem}>
         <View>
           <Text style={styles.expenseName}>{item.name}</Text>
-          <Text style={styles.expenseMeta}>{formattedDate} Paid by {item.paidBy}</Text>
+          <Text style={styles.expenseMeta}>
+            {formattedDate} Paid by {item.paidBy}
+          </Text>
         </View>
         <Text style={styles.expenseAmount}>${item.amount}</Text>
       </View>

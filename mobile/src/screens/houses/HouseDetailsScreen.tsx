@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../navigation/types';
 import {
   ActivityIndicator,
   Alert,
-  Button,
   FlatList,
   ScrollView,
   Share,
-  StyleSheet,
   Text,
+  Pressable,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_BASE_URL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { createHouseDetailsStyles } from './houseStyles';
 
 type House = {
   id: number;
@@ -37,18 +39,22 @@ export const HouseDetailsScreen = () => {
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const route = useRoute<RouteProp<AppStackParamList, 'HouseDetails'>>();
   const { user, token } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createHouseDetailsStyles(theme), [theme]);
   const { houseId } = route.params;
   const [house, setHouse] = useState<House | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  if (!user || !token) {
-    return null;
-  }
-
   useEffect(() => {
-    fetchHouseDetails();
+    if (!token) {
+      setError('Missing authentication token');
+      setIsLoading(false);
+      return;
+    }
+
+    void fetchHouseDetails();
   }, [houseId, token]);
 
   const fetchHouseDetails = async () => {
@@ -74,6 +80,10 @@ export const HouseDetailsScreen = () => {
       setIsLoading(false);
     }
   };
+
+  if (!user || !token) {
+    return null;
+  }
 
   const handleShareCode = async () => {
     if (!house) return;
@@ -102,192 +112,99 @@ export const HouseDetailsScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" />
-      </View>
+      <SafeAreaView style={styles.screen}>
+        <View style={[styles.panel, styles.centeredContainer]}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error || !house) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error || 'House not found'}</Text>
-        <Button
-          title="Go Back"
-          onPress={() => navigation.navigate('Home')}
-        />
-      </View>
+      <SafeAreaView style={styles.errorContainer}>
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{error || 'House not found'}</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.smallAction,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.smallActionText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.houseName}>{house.name}</Text>
-        <View style={styles.codeContainer}>
-          <Text style={styles.codeLabel}>Join Code:</Text>
-          <Text style={styles.codeValue}>{house.join_code}</Text>
-        </View>
-      </View>
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.panel}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{house.name}</Text>
+          <Text style={styles.subtitle}>Manage members and share access.</Text>
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Members ({members.length})</Text>
-        </View>
-        {members.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No members yet</Text>
+          <View style={styles.codeCard}>
+            <Text style={styles.codeLabel}>Join Code</Text>
+            <Text style={styles.codeValue}>{house.join_code}</Text>
           </View>
-        ) : (
-          <FlatList
-            data={members}
-            renderItem={renderMemberItem}
-            keyExtractor={item => item.id.toString()}
-        scrollEnabled={false}
-          />
-        )}
-      </View>
+        </View>
 
-      <View style={styles.actionContainer}>
-        <Button
-            title="Open Budget"
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Members ({members.length})</Text>
+          </View>
+          {members.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No members yet</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={members}
+              renderItem={renderMemberItem}
+              keyExtractor={item => item.id.toString()}
+              scrollEnabled={false}
+              contentContainerStyle={styles.listContent}
+            />
+          )}
+        </View>
+
+        <View style={styles.actionContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.buttonPressed,
+            ]}
             onPress={() =>
-            navigation.navigate('Budget', { userName: user.name, houseId })
+              navigation.navigate('Budget', { userName: user.name, houseId })
             }
-        />
-        <Button
-          title="Share Join Code"
-          onPress={handleShareCode}
-          color="#1d4ed8"
-        />
-        <Button
-          title="Go Back"
-          onPress={() => navigation.navigate('Home')}
-          color="#6b7280"
-        />
-      </View>
-    </ScrollView>
+          >
+            <Text style={styles.primaryButtonText}>Open Budget</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleShareCode}
+          >
+            <Text style={styles.secondaryButtonText}>Share Join Code</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.secondaryButtonText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
-  },
-  centeredContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#d32f2f',
-    marginBottom: 16,
-  },
-  header: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  houseName: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
-  },
-  codeContainer: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-  },
-  codeLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  codeValue: {
-    fontSize: 20,
-    fontFamily: 'monospace',
-    fontWeight: '600',
-    color: '#333',
-    letterSpacing: 1,
-  },
-  section: {
-    marginTop: 16,
-    backgroundColor: '#fff',
-    marginHorizontal: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  memberItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 2,
-  },
-  memberEmail: {
-    fontSize: 12,
-    color: '#999',
-  },
-  roleBadge: {
-    backgroundColor: '#e8f5e9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  roleText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#2e7d32',
-    textTransform: 'capitalize',
-  },
-  emptyContainer: {
-    paddingVertical: 32,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-  },
-  actionContainer: {
-    padding: 16,
-    gap: 8,
-  },
-});

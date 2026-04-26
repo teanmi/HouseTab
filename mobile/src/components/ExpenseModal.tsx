@@ -1,22 +1,22 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   Modal,
   Pressable,
-  Animated as RNAnimated,
   StyleSheet,
+  Animated as RNAnimated,
   Alert,
-} from "react-native";
+} from 'react-native';
 
-import { BlurView } from "@react-native-community/blur";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { BlurView } from '@react-native-community/blur';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-import PressableButton from "./PressableButton";
-import { styles } from "../styles/budgetStyles";
-import { useTheme } from "../context/ThemeContext";
-import { Expense } from "../types/Expense";
+import PressableButton from './PressableButton';
+import { useTheme } from '../context/ThemeContext';
+import { Expense } from '../types/Expense';
+import { createBudgetStyles } from '../styles/budgetStyles';
 
 type Props = {
   visible: boolean;
@@ -25,22 +25,31 @@ type Props = {
     name: string,
     amount: string,
     paidBy: string,
-    splitType: "everyone" | "individual" | "none",
+    splitType: 'everyone' | 'individual' | 'none',
     splitWith?: string[],
-    date?: string
+    date?: string,
   ) => Promise<boolean>;
   users: string[];
   expenseToEdit?: Expense | null;
 };
 
-const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props) => {
+const ExpenseModal = ({
+  visible,
+  onClose,
+  onSave,
+  users,
+  expenseToEdit,
+}: Props) => {
   const { theme } = useTheme();
+  const styles = useMemo(() => createBudgetStyles(theme), [theme]);
 
-  const [expenseName, setExpenseName] = useState("");
-  const [expenseAmount, setExpenseAmount] = useState("");
+  const [expenseName, setExpenseName] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
 
-  const [paidBy, setPaidBy] = useState("");
-  const [splitType, setSplitType] = useState<"everyone" | "individual" | "none">("everyone");
+  const [paidBy, setPaidBy] = useState('');
+  const [splitType, setSplitType] = useState<
+    'everyone' | 'individual' | 'none'
+  >('everyone');
 
   const [paidByModalVisible, setPaidByModalVisible] = useState(false);
   const [splitModalVisible, setSplitModalVisible] = useState(false);
@@ -77,22 +86,20 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
       setSelectedUsers(
         expenseToEdit.splitWith && expenseToEdit.splitWith.length > 0
           ? expenseToEdit.splitWith
-          : expenseToEdit.splitType === "everyone"
+          : expenseToEdit.splitType === 'everyone'
           ? [...users] // default to everyone if no splitWith
-          : []
+          : [],
       );
     } else {
       setSelectedUsers(users);
     }
   }, [expenseToEdit]);
 
-
   const handleSave = async () => {
-
     const parsedAmount = parseFloat(expenseAmount);
 
     if (!expenseName.trim() || isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid number.");
+      Alert.alert('Invalid Amount', 'Please enter a valid number.');
       return;
     }
 
@@ -102,7 +109,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
       paidBy,
       splitType,
       selectedUsers,
-      date ? date.toISOString() : "",
+      date ? date.toISOString() : '',
     );
 
     if (didSave) {
@@ -111,10 +118,10 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
   };
 
   const resetForm = () => {
-    setExpenseName("");
-    setExpenseAmount("");
+    setExpenseName('');
+    setExpenseAmount('');
     setDate(null);
-    setSplitType("everyone");
+    setSplitType('everyone');
     setSelectedUsers(users);
   };
 
@@ -129,16 +136,16 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
   };
 
   const splitLabels = {
-    everyone: "Everyone",
-    individual: "Individuals",
+    everyone: 'Everyone',
+    individual: 'Individuals',
     none: "Don't Split",
   };
 
   const toggleUser = (user: string) => {
-    setSelectedUsers((prev) => {
+    setSelectedUsers(prev => {
       if (prev.includes(user)) {
         if (prev.length === 1) return prev; // prevent removing last person
-        return prev.filter((u) => u !== user);
+        return prev.filter(u => u !== user);
       }
       return [...prev, user];
     });
@@ -149,7 +156,6 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
       {/* MAIN EXPENSE MODAL */}
       <Modal visible={visible} animationType="slide" transparent>
         <View style={styles.modalRoot}>
-
           <RNAnimated.View
             style={[StyleSheet.absoluteFill, { opacity: blurOpacity }]}
           >
@@ -176,8 +182,8 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
               placeholderTextColor={theme.placeholderText}
               keyboardType="numeric"
               value={expenseAmount}
-              onChangeText={(text) => {
-                const cleaned = text.replace(/[^0-9.]/g, "");
+              onChangeText={text => {
+                const cleaned = text.replace(/[^0-9.]/g, '');
                 setExpenseAmount(cleaned);
               }}
             />
@@ -200,7 +206,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
               onPress={() => setShowDatePicker(true)}
             >
               <Text>
-                {date ? date.toLocaleDateString() : "Select Date (Optional)"}
+                {date ? date.toLocaleDateString() : 'Select Date (Optional)'}
               </Text>
             </Pressable>
 
@@ -226,7 +232,7 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
         <View style={styles.modalRoot}>
           <View style={styles.bottomSheet}>
             <Text style={styles.modalTitle}>Who Paid?</Text>
-            {users.map((user) => (
+            {users.map(user => (
               <View key={user} style={styles.buttonGroup}>
                 <PressableButton
                   title={user === paidBy ? `✓ ${user}` : user}
@@ -254,53 +260,62 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
           <View style={styles.bottomSheet}>
             <Text style={styles.modalTitle}>Split Expense</Text>
             <View style={styles.buttonGroup}>
-
               <PressableButton
-                title={splitType === "everyone" ? "✓ Split With Everyone" : "Split With Everyone"}
+                title={
+                  splitType === 'everyone'
+                    ? '✓ Split With Everyone'
+                    : 'Split With Everyone'
+                }
                 onPress={() => {
-                  setSplitType("everyone");
+                  setSplitType('everyone');
                   setSelectedUsers(users);
                 }}
               />
 
               <PressableButton
-                title={splitType === "individual" ? "✓ Split Individually" : "Split Individually"}
+                title={
+                  splitType === 'individual'
+                    ? '✓ Split Individually'
+                    : 'Split Individually'
+                }
                 onPress={() => {
-                  setSplitType("individual");
-                  setSelectedUsers(users.filter((u) => u === paidBy));
+                  setSplitType('individual');
+                  setSelectedUsers(users.filter(u => u === paidBy));
                 }}
               />
 
               <PressableButton
-                title={splitType === "none" ? "✓ Don't Split" : "Don't Split"}
+                title={splitType === 'none' ? "✓ Don't Split" : "Don't Split"}
                 onPress={() => {
-                  setSplitType("none");
+                  setSplitType('none');
                   setSelectedUsers([]);
                 }}
               />
 
-              {splitType === "individual" && (
+              {splitType === 'individual' && (
                 <View style={{ marginTop: 10 }}>
-                  <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                  <Text style={{ fontWeight: '600', marginBottom: 6 }}>
                     Split Between
                   </Text>
 
-                  {users.map((user) => {
+                  {users.map(user => {
                     const selected = selectedUsers.includes(user);
 
                     return (
-                        <Pressable
+                      <Pressable
                         key={user}
                         style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            paddingVertical: 10,
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          paddingVertical: 10,
                         }}
                         onPress={() => toggleUser(user)}
-                        >
+                      >
                         <Text>{user}</Text>
-                        <Text style={{ fontSize: 20 }}>{selected ? "☑" : "☐"}</Text>
-                        </Pressable>
+                        <Text style={{ fontSize: 20 }}>
+                          {selected ? '☑' : '☐'}
+                        </Text>
+                      </Pressable>
                     );
                   })}
                 </View>
@@ -310,15 +325,14 @@ const ExpenseModal = ({ visible, onClose, onSave, users, expenseToEdit }: Props)
                 title="Save"
                 onPress={() => {
                   setSplitModalVisible(false);
-                  if (selectedUsers.length === 0){
-                    setSplitType("none");
+                  if (selectedUsers.length === 0) {
+                    setSplitType('none');
                   }
-                  if (selectedUsers.length === users.length){
-                    setSplitType("everyone");
+                  if (selectedUsers.length === users.length) {
+                    setSplitType('everyone');
                   }
                 }}
               />
-
             </View>
           </View>
         </View>
