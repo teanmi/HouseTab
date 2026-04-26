@@ -60,7 +60,7 @@ export const JoinHouseScreen = () => {
       }
 
       Alert.alert('Success', `You've joined ${data.house.name}!`, [
-        { text: 'OK', onPress: () => navigation.navigate('HouseList') },
+        { text: 'OK', onPress: () => navigation.navigate('Home') },
       ]);
     } catch (error) {
       console.error('Join house error:', error);
@@ -120,7 +120,7 @@ export const JoinHouseScreen = () => {
         />
         <Button
           title="Cancel"
-          onPress={() => navigation.navigate('HouseList')}
+          onPress={() => navigation.navigate('Home')}
           disabled={isLoading}
           color="#6b7280"
         />

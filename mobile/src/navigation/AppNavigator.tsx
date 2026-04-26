@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { BudgetScreen } from '../screens/BudgetScreen';
-import { HouseListScreen } from '../screens/houses/HouseListScreen';
 import { CreateHouseScreen } from '../screens/houses/CreateHouseScreen';
 import { JoinHouseScreen } from '../screens/houses/JoinHouseScreen';
 import { HouseDetailsScreen } from '../screens/houses/HouseDetailsScreen';
@@ -24,11 +23,6 @@ export function AppNavigator() {
         name="Home"
         component={HomeScreen}
         options={{ headerShown: false }}
-      />
-      <AppStack.Screen
-        name="HouseList"
-        component={HouseListScreen}
-        options={{ title: 'My Houses' }}
       />
       <AppStack.Screen
         name="CreateHouse"

@@ -53,7 +53,7 @@ export const CreateHouseScreen = () => {
       Alert.alert(
         'Success',
         `House created!\n\nShare this code with others: ${data.house.join_code}`,
-        [{ text: 'OK', onPress: () => navigation.navigate('HouseList') }],
+        [{ text: 'OK', onPress: () => navigation.navigate('Home') }],
       );
     } catch (error) {
       Alert.alert(
@@ -107,7 +107,7 @@ export const CreateHouseScreen = () => {
         />
         <Button
           title="Cancel"
-          onPress={() => navigation.navigate('HouseList')}
+          onPress={() => navigation.navigate('Home')}
           disabled={isLoading}
           color="#6b7280"
         />

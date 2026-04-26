@@ -114,7 +114,7 @@ export const HouseDetailsScreen = () => {
         <Text style={styles.errorText}>{error || 'House not found'}</Text>
         <Button
           title="Go Back"
-          onPress={() => navigation.navigate('HouseList')}
+          onPress={() => navigation.navigate('Home')}
         />
       </View>
     );
@@ -162,7 +162,7 @@ export const HouseDetailsScreen = () => {
         />
         <Button
           title="Go Back"
-          onPress={() => navigation.navigate('HouseList')}
+          onPress={() => navigation.navigate('Home')}
           color="#6b7280"
         />
       </View>
