@@ -3,6 +3,8 @@ import {
   Alert,
   Animated,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   Text,
   TextInput,
@@ -76,64 +78,69 @@ export function RegisterScreen({ navigation }: Props) {
         <Text style={styles.brandTitle}>HouseTab</Text>
       </View>
 
-      <Animated.View
-        style={[
-          styles.bottomPanel,
-          {
-            opacity: panelOpacity,
-            transform: [{ translateY: panelAnim }],
-          },
-        ]}
+      <KeyboardAvoidingView
+        style={styles.formContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Text style={styles.title}>Create account</Text>
-        <Text style={styles.subtitle}>Start managing your home team</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Name"
-          placeholderTextColor={theme.placeholderText}
-          value={name}
-          onChangeText={setName}
-        />
-        <TextInput
-          style={styles.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="Email"
-          placeholderTextColor={theme.placeholderText}
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          placeholder="Password"
-          placeholderTextColor={theme.placeholderText}
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <Pressable
-          onPress={handleRegister}
-          disabled={isLoading}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.primaryButtonPressed,
-            isLoading && styles.primaryButtonDisabled,
+        <Animated.View
+          style={[
+            styles.bottomPanel,
+            {
+              opacity: panelOpacity,
+              transform: [{ translateY: panelAnim }],
+            },
           ]}
         >
-          <Text style={styles.primaryButtonText}>
-            {isLoading ? 'Creating account...' : 'Create Account'}
-          </Text>
-        </Pressable>
+          <Text style={styles.title}>Create account</Text>
+          <Text style={styles.subtitle}>Start managing your home team</Text>
 
-        <Pressable
-          onPress={() => navigation.navigate('Login')}
-          style={styles.secondaryButton}
-        >
-          <Text style={styles.secondaryButtonText}>Back to login</Text>
-        </Pressable>
-      </Animated.View>
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            placeholderTextColor={theme.placeholderText}
+            value={name}
+            onChangeText={setName}
+          />
+          <TextInput
+            style={styles.input}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="Email"
+            placeholderTextColor={theme.placeholderText}
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            secureTextEntry
+            placeholder="Password"
+            placeholderTextColor={theme.placeholderText}
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <Pressable
+            onPress={handleRegister}
+            disabled={isLoading}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.primaryButtonPressed,
+              isLoading && styles.primaryButtonDisabled,
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>
+              {isLoading ? 'Creating account...' : 'Create Account'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate('Login')}
+            style={styles.secondaryButton}
+          >
+            <Text style={styles.secondaryButtonText}>Back to login</Text>
+          </Pressable>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -93,7 +93,7 @@ docker compose up --build
 
 ```
 cd ../mobile
-npx react-native dev
+npx react-native start
 ```
 
 - Keep this terminal open — it serves your JavaScript bundle to the emulator or device.

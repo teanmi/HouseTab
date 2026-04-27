@@ -3,6 +3,8 @@ import {
   Alert,
   Animated,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   Text,
   TextInput,
@@ -75,57 +77,62 @@ export function LoginScreen({ navigation }: Props) {
         <Text style={styles.brandTitle}>HouseTab</Text>
       </View>
 
-      <Animated.View
-        style={[
-          styles.bottomPanel,
-          {
-            opacity: panelOpacity,
-            transform: [{ translateY: panelAnim }],
-          },
-        ]}
+      <KeyboardAvoidingView
+        style={styles.formContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
-
-        <TextInput
-          style={styles.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="Email"
-          placeholderTextColor={theme.placeholderText}
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          placeholder="Password"
-          placeholderTextColor={theme.placeholderText}
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <Pressable
-          onPress={handleLogin}
-          disabled={isLoading}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.primaryButtonPressed,
-            isLoading && styles.primaryButtonDisabled,
+        <Animated.View
+          style={[
+            styles.bottomPanel,
+            {
+              opacity: panelOpacity,
+              transform: [{ translateY: panelAnim }],
+            },
           ]}
         >
-          <Text style={styles.primaryButtonText}>
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </Text>
-        </Pressable>
+          <Text style={styles.title}>Welcome back</Text>
+          <Text style={styles.subtitle}>Sign in to continue</Text>
 
-        <Pressable
-          onPress={() => navigation.navigate('Register')}
-          style={styles.secondaryButton}
-        >
-          <Text style={styles.secondaryButtonText}>Create account</Text>
-        </Pressable>
-      </Animated.View>
+          <TextInput
+            style={styles.input}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="Email"
+            placeholderTextColor={theme.placeholderText}
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            secureTextEntry
+            placeholder="Password"
+            placeholderTextColor={theme.placeholderText}
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <Pressable
+            onPress={handleLogin}
+            disabled={isLoading}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.primaryButtonPressed,
+              isLoading && styles.primaryButtonDisabled,
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate('Register')}
+            style={styles.secondaryButton}
+          >
+            <Text style={styles.secondaryButtonText}>Create account</Text>
+          </Pressable>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
