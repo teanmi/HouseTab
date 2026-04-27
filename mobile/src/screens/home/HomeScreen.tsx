@@ -62,9 +62,9 @@ export function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome, {user.name}</Text>
-          <Text style={styles.email}>{user.email}</Text>
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">Welcome, {user.name}</Text>
+          <Text style={styles.email} numberOfLines={1} ellipsizeMode="tail">{user.email}</Text>
         </View>
         <Pressable onPress={logout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Logout</Text>

@@ -8,6 +8,10 @@ export const createHouseFormStyles = (theme: Theme) =>
       backgroundColor: theme.primary,
       padding: 16,
     },
+    formContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
     header: {
       paddingTop: 8,
       paddingBottom: 14,
@@ -33,12 +37,32 @@ export const createHouseFormStyles = (theme: Theme) =>
       marginTop: 6,
     },
     panel: {
-      flex: 1,
       backgroundColor: theme.cardBackground,
       borderRadius: 28,
       borderWidth: 1,
       borderColor: theme.border,
-      padding: 16,
+      padding: 20,
+      paddingBottom: 28,
+      marginBottom: 12,
+      alignSelf: 'center',
+      width: '86%',
+      maxWidth: 520,
+      minHeight: 260,
+    },
+    panelBody: {},
+    formContainerCentered: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    panelHeader: {
+      marginBottom: 10,
+    },
+    panelScroll: {
+      flex: 1,
+    },
+    panelScrollContent: {
+      flexGrow: 1,
+      paddingBottom: 24,
     },
     section: {
       marginBottom: 16,
@@ -88,27 +112,27 @@ export const createHouseFormStyles = (theme: Theme) =>
       marginTop: 12,
     },
     buttonStack: {
-      gap: 10,
+      gap: 12,
       marginTop: 'auto',
-      paddingTop: 10,
+      paddingTop: 12,
     },
     primaryButton: {
       backgroundColor: theme.primary,
       borderRadius: 999,
-      minHeight: 48,
+      minHeight: 54,
       alignItems: 'center',
       justifyContent: 'center',
     },
     primaryButtonText: {
       color: '#FFFFFF',
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '700',
     },
     secondaryButton: {
       borderWidth: 1,
       borderColor: theme.primary,
       borderRadius: 999,
-      minHeight: 48,
+      minHeight: 54,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.cardBackground,

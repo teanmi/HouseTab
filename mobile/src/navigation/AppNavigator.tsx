@@ -18,31 +18,26 @@ export function AppNavigator() {
   }
 
   return (
-    <AppStack.Navigator>
+    <AppStack.Navigator screenOptions={{ headerShown: false }}>
       <AppStack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ headerShown: false }}
       />
       <AppStack.Screen
         name="CreateHouse"
         component={CreateHouseScreen}
-        options={{ title: 'Create House' }}
       />
       <AppStack.Screen
         name="JoinHouse"
         component={JoinHouseScreen}
-        options={{ title: 'Join House' }}
       />
       <AppStack.Screen
         name="HouseDetails"
         component={HouseDetailsScreen}
-        options={{ title: 'House Details' }}
       />
       <AppStack.Screen
         name="Budget"
         component={BudgetScreen}
-        options={{ headerShown: false }}
       />
     </AppStack.Navigator>
   );

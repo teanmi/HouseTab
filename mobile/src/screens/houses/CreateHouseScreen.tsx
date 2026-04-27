@@ -4,7 +4,8 @@ import type { NavigationProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../navigation/types';
 import {
   Alert,
-  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   Text,
   TextInput,
   Pressable,
@@ -65,15 +66,19 @@ export const CreateHouseScreen = () => {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Create a house</Text>
-          <Text style={styles.subtitle}>
-            Set up a shared space for your group.
-          </Text>
-        </View>
-
+      <KeyboardAvoidingView
+        style={styles.formContainerCentered}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 16 : 64}
+      >
         <View style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.title}>Create a house</Text>
+            <Text style={styles.subtitle}>
+              Set up a shared space for your group.
+            </Text>
+          </View>
+
           {createdHouse && (
             <View style={styles.successCard}>
               <Text style={styles.successTitle}>House created</Text>
@@ -141,7 +146,7 @@ export const CreateHouseScreen = () => {
             </Pressable>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

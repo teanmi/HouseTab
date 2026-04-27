@@ -4,7 +4,8 @@ import type { NavigationProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../navigation/types';
 import {
   Alert,
-  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   Text,
   TextInput,
   Pressable,
@@ -54,12 +55,30 @@ export const JoinHouseScreen = () => {
       console.log('Response data:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to join house');
+        throw new Error(
+          data?.message || `Failed to join house (status ${response.status})`,
+        );
       }
 
-      const joinedHouseId = Number(data?.house?.id);
+      // Support a few possible response shapes for the joined house id
+      const idCandidates = [
+        data?.house?.id,
+        data?.house_id,
+        data?.id,
+        data?.house?.house_id,
+        data?.houseId,
+      ];
+
+      const found = idCandidates.find(v => v !== undefined && v !== null);
+      const joinedHouseId = Number(found ?? NaN);
+
       if (!Number.isFinite(joinedHouseId)) {
-        throw new Error('Joined house details are missing');
+        console.warn(
+          'JoinHouseScreen: joined house id missing in response, falling back to Home',
+          data,
+        );
+        navigation.navigate('Home');
+        return;
       }
 
       navigation.navigate('HouseDetails', { houseId: joinedHouseId });
@@ -76,15 +95,19 @@ export const JoinHouseScreen = () => {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.titleWhite}>Join a house</Text>
-          <Text style={styles.subtitleGrey}>
-            Enter the code your roommate shared.
-          </Text>
-        </View>
-
+      <KeyboardAvoidingView
+        style={styles.formContainerCentered}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 16 : 64}
+      >
         <View style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.title}>Join a house</Text>
+            <Text style={styles.subtitle}>
+              Enter the code your roommate shared.
+            </Text>
+          </View>
+
           <View style={styles.section}>
             <Text style={styles.label}>Join Code</Text>
             <TextInput
@@ -129,7 +152,7 @@ export const JoinHouseScreen = () => {
             </Pressable>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

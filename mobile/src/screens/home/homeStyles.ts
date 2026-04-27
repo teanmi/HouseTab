@@ -16,15 +16,21 @@ export const createHomeStyles = (theme: Theme) =>
       alignItems: 'flex-start',
       gap: 12,
     },
+    greetingContainer: {
+      flex: 1,
+      minWidth: 0,
+    },
     greeting: {
       color: '#FFFFFF',
       fontSize: 28,
       fontWeight: '700',
+      flexShrink: 1,
     },
     email: {
       color: 'rgba(255,255,255,0.9)',
       fontSize: 14,
       marginTop: 6,
+      flexShrink: 1,
     },
     logoutButton: {
       borderWidth: 1,
