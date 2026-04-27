@@ -56,17 +56,18 @@ const BalancesModal = ({
   );
 
   const renderBalance = ([user, balance]: [string, number]) => {
+    const roundedBalance = Math.round(balance * 100) / 100;
     let color = '#444';
     let label = 'settled up';
 
-    if (balance > 0) {
+    if (roundedBalance > 0) {
       color = '#2ecc71';
-      label = `gets $${balance.toFixed(2)}`;
+      label = `gets $${roundedBalance.toFixed(2)}`;
     }
 
-    if (balance < 0) {
+    if (roundedBalance < 0) {
       color = '#e74c3c';
-      label = `owes $${Math.abs(balance).toFixed(2)}`;
+      label = `owes $${Math.abs(roundedBalance).toFixed(2)}`;
     }
 
     return (
@@ -100,10 +101,15 @@ const BalancesModal = ({
             </Text>
 
             {Object.entries(balances).map(([user, balance]) => {
-              const width = (Math.abs(balance) / max) * 200;
+              const roundedBalance = Math.round(balance * 100) / 100;
+              const width = (Math.abs(roundedBalance) / max) * 200;
 
               const color =
-                balance > 0 ? '#2ecc71' : balance < 0 ? '#e74c3c' : '#ccc';
+                roundedBalance > 0
+                  ? '#2ecc71'
+                  : roundedBalance < 0
+                  ? '#e74c3c'
+                  : '#ccc';
 
               return (
                 <View key={user} style={{ marginBottom: 12 }}>
@@ -120,11 +126,11 @@ const BalancesModal = ({
                   </View>
 
                   <Text style={styles.overviewText}>
-                    {balance === 0
+                    {roundedBalance === 0
                       ? 'Settled'
-                      : balance > 0
-                      ? `Gets $${balance.toFixed(2)}`
-                      : `Owes $${Math.abs(balance).toFixed(2)}`}
+                      : roundedBalance > 0
+                      ? `Gets $${roundedBalance.toFixed(2)}`
+                      : `Owes $${Math.abs(roundedBalance).toFixed(2)}`}
                   </Text>
                 </View>
               );

@@ -112,54 +112,190 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     .reduce((sum, e) => sum + e.amount, 0);
   const visibleExpenses = expenses.filter(e => e.type !== 'settlement');
 
-  const users = [userName, ...roommates];
+  const houseUsers = Array.from(
+    new Set([userName, ...roommates].filter(name => !!name?.trim())),
+  );
 
-  const balances: Record<string, number> = {};
-  users.forEach(user => (balances[user] = 0));
+  const users = Array.from(
+    new Set(
+      [
+        ...houseUsers,
+        ...expenses.flatMap(expense => [
+          expense.paidBy,
+          ...(expense.splitWith || []),
+        ]),
+      ].filter(name => !!name?.trim()),
+    ),
+  );
 
-  expenses.forEach(expense => {
-    if (!expense.splitWith || expense.splitWith.length === 0) return;
+  const toCents = (value: number) => Math.round(value * 100);
+  const fromCents = (value: number) => value / 100;
 
-    const share = expense.amount / expense.splitWith.length;
-
-    expense.splitWith.forEach(user => {
-      balances[user] -= share;
+  const calculateBalances = (
+    allExpenses: Expense[],
+    allUsers: string[],
+    allHouseUsers: string[],
+  ): Record<string, number> => {
+    const knownUsers = new Set(allUsers);
+    const centBalances: Record<string, number> = {};
+    allUsers.forEach(user => {
+      centBalances[user] = 0;
     });
 
-    balances[expense.paidBy] += expense.amount;
-  });
+    const expensesInOrder = [...allExpenses].sort((a, b) => {
+      const idA = Number(a.id);
+      const idB = Number(b.id);
+      if (Number.isFinite(idA) && Number.isFinite(idB)) {
+        return idA - idB;
+      }
+
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+    for (const expense of expensesInOrder) {
+      const payer = expense.paidBy;
+      if (!knownUsers.has(payer)) {
+        continue;
+      }
+
+      const amountCents = toCents(expense.amount);
+      if (amountCents <= 0) {
+        continue;
+      }
+
+      if (expense.type === 'settlement') {
+        const receivers = (expense.splitWith || []).filter(
+          user => knownUsers.has(user) && user !== payer,
+        );
+
+        if (receivers.length === 0) {
+          continue;
+        }
+
+        const sharePerReceiver = Math.floor(amountCents / receivers.length);
+        let remainingCents = amountCents;
+
+        receivers.forEach((receiver, index) => {
+          const receiverShare =
+            index === receivers.length - 1
+              ? remainingCents
+              : sharePerReceiver;
+          remainingCents -= receiverShare;
+
+          // Cap settlement transfer to prevent over-settling from corrupting balances.
+          const payerDebtCents = Math.max(0, -centBalances[payer]);
+          const receiverCreditCents = Math.max(0, centBalances[receiver]);
+          const transferableCents = Math.min(
+            receiverShare,
+            payerDebtCents,
+            receiverCreditCents,
+          );
+
+          if (transferableCents > 0) {
+            centBalances[payer] += transferableCents;
+            centBalances[receiver] -= transferableCents;
+          }
+        });
+
+        continue;
+      }
+
+      let participants: string[] = [];
+      if (expense.splitType === 'everyone') {
+        const selected = Array.from(
+          new Set((expense.splitWith || []).filter(user => knownUsers.has(user))),
+        );
+        participants =
+          selected.length > 0
+            ? selected
+            : allHouseUsers.length > 0
+            ? allHouseUsers
+            : [payer];
+      } else if (expense.splitType === 'individual') {
+        const selected = Array.from(
+          new Set((expense.splitWith || []).filter(user => knownUsers.has(user))),
+        );
+        participants = selected.length > 0 ? selected : [payer];
+      } else if (expense.splitType === 'none') {
+        participants = [];
+      } else {
+        // Fallback for legacy records with missing/invalid splitType.
+        const selected = Array.from(
+          new Set((expense.splitWith || []).filter(user => knownUsers.has(user))),
+        );
+        participants =
+          selected.length > 0
+            ? selected
+            : allHouseUsers.length > 0
+            ? allHouseUsers
+            : [payer];
+      }
+
+      if (participants.length === 0) {
+        continue;
+      }
+
+      const sharePerParticipant = Math.floor(amountCents / participants.length);
+      let remainingCents = amountCents;
+
+      participants.forEach((participant, index) => {
+        const participantShare =
+          index === participants.length - 1
+            ? remainingCents
+            : sharePerParticipant;
+        remainingCents -= participantShare;
+        centBalances[participant] -= participantShare;
+      });
+
+      centBalances[payer] += amountCents;
+    }
+
+    const numericBalances: Record<string, number> = {};
+    allUsers.forEach(user => {
+      numericBalances[user] = fromCents(centBalances[user]);
+    });
+
+    return numericBalances;
+  };
 
   function calculateSettlements(balances: Record<string, number>) {
     const debtors: { name: string; amount: number }[] = [];
     const creditors: { name: string; amount: number }[] = [];
 
     Object.entries(balances).forEach(([name, amount]) => {
-      if (amount < 0) debtors.push({ name, amount: -amount });
-      if (amount > 0) creditors.push({ name, amount });
+      const cents = toCents(amount);
+      if (cents < 0) debtors.push({ name, amount: -cents });
+      if (cents > 0) creditors.push({ name, amount: cents });
     });
 
-    const settlements: string[] = [];
+    debtors.sort((a, b) => b.amount - a.amount);
+    creditors.sort((a, b) => b.amount - a.amount);
 
-    while (debtors.length && creditors.length) {
-      const debtor = debtors[0];
-      const creditor = creditors[0];
+    const computedSettlements: string[] = [];
 
-      const payment = Math.min(debtor.amount, creditor.amount);
+    let debtorIndex = 0;
+    let creditorIndex = 0;
 
-      settlements.push(
-        `${debtor.name} pays ${creditor.name} $${payment.toFixed(2)}`,
+    while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+      const debtor = debtors[debtorIndex];
+      const creditor = creditors[creditorIndex];
+      const paymentCents = Math.min(debtor.amount, creditor.amount);
+
+      computedSettlements.push(
+        `${debtor.name} pays ${creditor.name} $${fromCents(paymentCents).toFixed(2)}`,
       );
 
-      debtor.amount -= payment;
-      creditor.amount -= payment;
+      debtor.amount -= paymentCents;
+      creditor.amount -= paymentCents;
 
-      if (debtor.amount === 0) debtors.shift();
-      if (creditor.amount === 0) creditors.shift();
+      if (debtor.amount === 0) debtorIndex += 1;
+      if (creditor.amount === 0) creditorIndex += 1;
     }
 
-    return settlements;
+    return computedSettlements;
   }
 
+  const balances = calculateBalances(expenses, users, houseUsers);
   const settlements = calculateSettlements(balances);
 
   const deleteExpense = async (id: string) => {
@@ -190,7 +326,10 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
     splitWith?: string[],
     date?: string,
   ) => {
-    if (splitType === 'everyone' && (isLoadingRoommates || users.length < 2)) {
+    if (
+      splitType === 'everyone' &&
+      (isLoadingRoommates || houseUsers.length < 2)
+    ) {
       Alert.alert(
         'Roommates not ready',
         'Please wait for roommates to load before splitting with everyone.',
@@ -211,7 +350,7 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
 
     const resolvedSplitWith =
       splitType === 'everyone'
-        ? users
+        ? houseUsers
         : splitType === 'none'
         ? []
         : splitWith && splitWith.length > 0
@@ -399,7 +538,7 @@ export function BudgetScreen({ navigation, route }: BudgetScreenProps) {
         }}
         onSave={handleSaveExpense}
         expenseToEdit={editingExpense}
-        users={users}
+        users={houseUsers}
       />
       <BalancesModal
         visible={balancesVisible}
