@@ -22,6 +22,16 @@ export const createHouseFormStyles = (theme: Theme) =>
       fontSize: 14,
       marginTop: 6,
     },
+    titleWhite: {
+      color: '#FFFFFF',
+      fontSize: 30,
+      fontWeight: '700',
+    },
+    subtitleGrey: {
+      color: '#E5E5EA',
+      fontSize: 14,
+      marginTop: 6,
+    },
     panel: {
       flex: 1,
       backgroundColor: theme.cardBackground,

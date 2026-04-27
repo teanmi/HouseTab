@@ -78,8 +78,8 @@ export const JoinHouseScreen = () => {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Join a house</Text>
-          <Text style={styles.subtitle}>
+          <Text style={styles.titleWhite}>Join a house</Text>
+          <Text style={styles.subtitleGrey}>
             Enter the code your roommate shared.
           </Text>
         </View>
