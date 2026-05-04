@@ -6,7 +6,7 @@ const LOCAL_API_BASE_URL = Platform.select({
   default: 'http://localhost:3000',
 });
 
-const PROD_API_BASE_URL = 'https://housetab-backend-production.up.railway.app';
+const PROD_API_BASE_URL = 'https://api.housetabapp.com';
 
 export const API_BASE_URL = (
   __DEV__ ? LOCAL_API_BASE_URL : PROD_API_BASE_URL

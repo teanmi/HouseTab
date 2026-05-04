@@ -18,7 +18,30 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const AUTO_MIGRATE =
   String(process.env.AUTO_MIGRATE || 'false').toLowerCase() === 'true';
 
-app.use(cors());
+const allowedOrigins = [
+  'https://housetabapp.com',
+  'https://www.housetabapp.com',
+  'https://api.housetabapp.com',
+
+  // Local development origins:
+  'http://localhost:3000',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || __DEV__) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -573,14 +596,9 @@ async function startServer() {
     }
 
     app.listen(PORT, HOST, () => {
-      const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : null;
-
-      console.log(`Server listening on ${HOST}:${PORT}`);
-      if (railwayUrl) {
-        console.log(`Public URL: ${railwayUrl}`);
-      }
+      console.log(`--- HouseTab Backend Active ---`);
+      console.log(`Internal: http://${HOST}:${PORT}`);
+      console.log(`External: https://api.housetabapp.com`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
