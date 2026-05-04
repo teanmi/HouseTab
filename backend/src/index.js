@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -27,21 +26,23 @@ const allowedOrigins = [
   'http://localhost:3000',
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || __DEV__) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1 || __DEV__) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -212,18 +213,6 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ============================================================================
-// Privacy Policy Endpoint
-// ============================================================================
-
-app.get('/privacy-policy', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'privacy-policy.html'));
-});
-
-app.get('/delete-account', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'delete-account.html'));
-});
-
 app.post('/delete-account', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -295,8 +284,8 @@ function parseExpensePayload(body) {
       return { error: 'Split with must be an array' };
     }
     splitWith = body.splitWith
-      .filter((value) => typeof value === 'string' && value.trim())
-      .map((value) => value.trim());
+      .filter(value => typeof value === 'string' && value.trim())
+      .map(value => value.trim());
   }
 
   const type = body?.type || 'expense';
@@ -371,7 +360,9 @@ app.post('/houses/join', authMiddleware, async (req, res) => {
         body: req.body,
         join_code: joinCode,
       });
-      return res.status(400).json({ message: 'Join code is required and must be a string' });
+      return res
+        .status(400)
+        .json({ message: 'Join code is required and must be a string' });
     }
 
     const house = await houseService.joinHouseByCode(req.user.id, joinCode);
@@ -429,7 +420,9 @@ app.get('/houses/:id', authMiddleware, async (req, res) => {
     // Check if user is member of this house
     const isMember = await houseService.isUserMember(req.user.id, id);
     if (!isMember) {
-      return res.status(403).json({ message: 'You do not have access to this house' });
+      return res
+        .status(403)
+        .json({ message: 'You do not have access to this house' });
     }
 
     const house = await houseService.getHouseById(id);
@@ -464,7 +457,9 @@ app.get('/expenses', authMiddleware, async (req, res) => {
 
     const isMember = await houseService.isUserMember(req.user.id, houseId);
     if (!isMember) {
-      return res.status(403).json({ message: 'You do not have access to this house' });
+      return res
+        .status(403)
+        .json({ message: 'You do not have access to this house' });
     }
 
     const expenses = await expenseService.getExpensesByHouse(houseId);
@@ -489,7 +484,9 @@ app.post('/expenses', authMiddleware, async (req, res) => {
 
     const isMember = await houseService.isUserMember(req.user.id, houseId);
     if (!isMember) {
-      return res.status(403).json({ message: 'You do not have access to this house' });
+      return res
+        .status(403)
+        .json({ message: 'You do not have access to this house' });
     }
 
     const parsed = parseExpensePayload(req.body);
@@ -531,7 +528,9 @@ app.put('/expenses/:id', authMiddleware, async (req, res) => {
 
     const isMember = await houseService.isUserMember(req.user.id, houseId);
     if (!isMember) {
-      return res.status(403).json({ message: 'You do not have access to this house' });
+      return res
+        .status(403)
+        .json({ message: 'You do not have access to this house' });
     }
 
     const parsed = parseExpensePayload(req.body);
@@ -539,7 +538,11 @@ app.put('/expenses/:id', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: parsed.error });
     }
 
-    const expense = await expenseService.updateExpense(expenseId, houseId, parsed.value);
+    const expense = await expenseService.updateExpense(
+      expenseId,
+      houseId,
+      parsed.value,
+    );
     if (!expense) {
       return res.status(404).json({ message: 'Expense not found' });
     }
@@ -571,7 +574,9 @@ app.delete('/expenses/:id', authMiddleware, async (req, res) => {
 
     const isMember = await houseService.isUserMember(req.user.id, houseId);
     if (!isMember) {
-      return res.status(403).json({ message: 'You do not have access to this house' });
+      return res
+        .status(403)
+        .json({ message: 'You do not have access to this house' });
     }
 
     const deleted = await expenseService.deleteExpense(expenseId, houseId);
