@@ -42,6 +42,7 @@ export const createAuthStyles = (theme: Theme) =>
       borderWidth: 1,
       borderColor: theme.border,
       marginBottom: 4,
+      minHeight: 300,
     },
     keyboardPanel: {
       marginTop: 'auto',
@@ -139,5 +140,16 @@ export const createAuthStyles = (theme: Theme) =>
       color: '#FFFFFF',
       fontSize: 16,
       fontWeight: '600',
+    },
+    showPasswordButton: {
+        position: 'absolute',
+        right: 10,
+        top: 10,
+        padding: 5,
+    },
+    showPasswordButtonText: {
+        color: theme.primary,
+        fontSize: 14,
+        fontWeight: '600',
     },
   });

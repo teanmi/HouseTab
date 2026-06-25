@@ -4,10 +4,8 @@ import {
   Animated,
   Image,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +15,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import type { AuthStackParamList } from '../../navigation/types';
 import { createAuthStyles } from './authStyles';
+import { EmailInput } from '../../components/auth/EmailInput';
+import { PasswordInput } from '../../components/auth/PasswordInput';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -77,10 +77,7 @@ export function LoginScreen({ navigation }: Props) {
         <Text style={styles.brandTitle}>HouseTab</Text>
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.formContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={styles.formContainer} behavior="padding">
         <Animated.View
           style={[
             styles.bottomPanel,
@@ -93,24 +90,8 @@ export function LoginScreen({ navigation }: Props) {
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
 
-          <TextInput
-            style={styles.input}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="Email"
-            placeholderTextColor={theme.placeholderText}
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            style={styles.input}
-            secureTextEntry
-            placeholder="Password"
-            placeholderTextColor={theme.placeholderText}
-            value={password}
-            onChangeText={setPassword}
-          />
-
+          <EmailInput value={email} onChangeText={setEmail} />
+          <PasswordInput value={password} onChangeText={setPassword} />
           <Pressable
             onPress={handleLogin}
             disabled={isLoading}
