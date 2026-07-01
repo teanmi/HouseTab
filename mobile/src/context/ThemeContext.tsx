@@ -11,8 +11,10 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  const theme = isDarkMode ? darkTheme : lightTheme;
+//   const isDarkMode = colorScheme === 'dark';
+//   const theme = isDarkMode ? darkTheme : lightTheme;
+  const isDarkMode = false; // Forcing light mode for now
+  const theme = lightTheme;
 
   return (
     <ThemeContext.Provider value={{ theme, isDarkMode }}>
