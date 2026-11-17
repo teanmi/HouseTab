@@ -51,7 +51,7 @@ async function runMigrations(pool) {
     }
 
     await migration.up(pool);
-    await pool.query('INSERT INTO schema_migrations (name) VALUES (?)', [
+    await pool.query('INSERT INTO schema_migrations (name) VALUES ($1)', [
       migrationFile.name,
     ]);
     console.log(`Applied migration: ${migrationFile.name}`);

@@ -24,6 +24,7 @@ const allowedOrigins = [
 
   // Local development origins:
   'http://localhost:3000',
+  'http://localhost:3001',
 ];
 
 app.use(
@@ -89,8 +90,8 @@ app.post('/auth/register', async (req, res) => {
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
-    const [existingUsers] = await pool.query(
-      'SELECT id FROM users WHERE email = ?',
+    const { rows: existingUsers } = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
       [normalizedEmail],
     );
     if (existingUsers.length > 0) {
@@ -99,13 +100,13 @@ app.post('/auth/register', async (req, res) => {
 
     const password_hash = await bcrypt.hash(String(password), 10);
 
-    const [result] = await pool.query(
-      'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
+    const result = await pool.query(
+      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
       [String(name).trim(), normalizedEmail, password_hash],
     );
 
     const user = {
-      id: result.insertId,
+      id: result.rows[0].id,
       name: String(name).trim(),
       email: normalizedEmail,
     };
@@ -129,8 +130,8 @@ app.post('/auth/login', async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const [rows] = await pool.query(
-      'SELECT id, name, email, password_hash FROM users WHERE email = ?',
+    const { rows } = await pool.query(
+      'SELECT id, name, email, password_hash FROM users WHERE email = $1',
       [normalizedEmail],
     );
 
@@ -177,8 +178,8 @@ app.post('/auth/refresh', async (req, res) => {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    const [rows] = await pool.query(
-      'SELECT id, name, email FROM users WHERE id = ?',
+    const { rows } = await pool.query(
+      'SELECT id, name, email FROM users WHERE id = $1',
       [payload.id],
     );
 
@@ -198,8 +199,8 @@ app.post('/auth/refresh', async (req, res) => {
 
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      'SELECT id, name, email FROM users WHERE id = ?',
+    const { rows } = await pool.query(
+      'SELECT id, name, email FROM users WHERE id = $1',
       [req.user.id],
     );
     if (rows.length === 0) {
