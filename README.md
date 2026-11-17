@@ -1,6 +1,6 @@
 # HouseTab Mobile App
 
-A React Native CLI mobile app for managing house expenses and teams. This project includes a **React Native** frontend, a **Node.js/Express backend**, and a **PostgreSQL database**. It uses a local PostgreSQL instance for development and the same environment variables for hosted Postgres deployments.
+A React and Next.js web app for managing house expenses and teams. This project includes a **Next.js** frontend, a **Node.js/Express backend**, and a **PostgreSQL database**. It uses a local PostgreSQL instance for development and the same environment variables for hosted Postgres deployments.
 
 ---
 
@@ -10,9 +10,7 @@ A React Native CLI mobile app for managing house expenses and teams. This projec
 [Local PostgreSQL setup](#local-postgresql-setup)
 [Backend Setup](#backend-setup)
 [Migrations](#migrations)
-[Running the App](#running-the-app)
 [Running the Website](#running-the-website)
-]
 
 ---
 
@@ -26,8 +24,6 @@ Make sure the following are installed on your system:
 - Node.js 20
 - PostgreSQL 16 client/server
   - https://www.postgresql.org/download/
-- Java 17+ (required for some Android tooling)
-- Android Studio (if building mobile components)
 
 ---
 
