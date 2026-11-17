@@ -4,8 +4,9 @@ function normalizeSplitWith(raw) {
   }
 
   if (Array.isArray(raw)) {
-    return raw.filter((value) => typeof value === 'string' && value.trim())
-      .map((value) => value.trim());
+    return raw
+      .filter(value => typeof value === 'string' && value.trim())
+      .map(value => value.trim());
   }
 
   if (typeof raw === 'string') {
@@ -13,8 +14,8 @@ function normalizeSplitWith(raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed
-          .filter((value) => typeof value === 'string' && value.trim())
-          .map((value) => value.trim());
+          .filter(value => typeof value === 'string' && value.trim())
+          .map(value => value.trim());
       }
     } catch (_error) {
       return [];
@@ -60,22 +61,22 @@ class ExpenseService {
   }
 
   async getExpensesByHouse(houseId) {
-    const [rows] = await this.pool.query(
+    const { rows } = await this.pool.query(
       `SELECT id, name, amount, paid_by, split_type, split_with, expense_date, category, expense_type
        FROM expenses
-       WHERE house_id = ?
+       WHERE house_id = $1
        ORDER BY expense_date DESC, created_at DESC`,
       [houseId],
     );
 
-    return rows.map((row) => this.toExpense(row));
+    return rows.map(row => this.toExpense(row));
   }
 
   async getExpenseById(id, houseId) {
-    const [rows] = await this.pool.query(
+    const { rows } = await this.pool.query(
       `SELECT id, name, amount, paid_by, split_type, split_with, expense_date, category, expense_type
        FROM expenses
-       WHERE id = ? AND house_id = ?`,
+       WHERE id = $1 AND house_id = $2`,
       [id, houseId],
     );
 
@@ -104,7 +105,7 @@ class ExpenseService {
       ? JSON.stringify(splitWith)
       : null;
 
-    const [result] = await this.pool.query(
+    const result = await this.pool.query(
       `INSERT INTO expenses (
         house_id,
         created_by,
@@ -116,7 +117,7 @@ class ExpenseService {
         expense_date,
         category,
         expense_type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10) RETURNING id`,
       [
         houseId,
         createdBy,
@@ -132,7 +133,7 @@ class ExpenseService {
     );
 
     return {
-      id: String(result.insertId),
+      id: String(result.rows[0].id),
       name,
       amount: Number(amount),
       paidBy,
@@ -160,17 +161,18 @@ class ExpenseService {
       ? JSON.stringify(splitWith)
       : null;
 
-    const [result] = await this.pool.query(
+    const result = await this.pool.query(
       `UPDATE expenses
-       SET name = ?,
-           amount = ?,
-           paid_by = ?,
-           split_type = ?,
-           split_with = ?,
-           expense_date = ?,
-           category = ?,
-           expense_type = ?
-       WHERE id = ? AND house_id = ?`,
+       SET name = $1,
+           amount = $2,
+           paid_by = $3,
+           split_type = $4,
+           split_with = $5::jsonb,
+           expense_date = $6,
+           category = $7,
+           expense_type = $8,
+           updated_at = NOW()
+       WHERE id = $9 AND house_id = $10`,
       [
         name,
         amount,
@@ -185,7 +187,7 @@ class ExpenseService {
       ],
     );
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return null;
     }
 
@@ -193,12 +195,12 @@ class ExpenseService {
   }
 
   async deleteExpense(id, houseId) {
-    const [result] = await this.pool.query(
-      'DELETE FROM expenses WHERE id = ? AND house_id = ?',
+    const result = await this.pool.query(
+      'DELETE FROM expenses WHERE id = $1 AND house_id = $2',
       [id, houseId],
     );
 
-    return result.affectedRows > 0;
+    return result.rowCount > 0;
   }
 }
 

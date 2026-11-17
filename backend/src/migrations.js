@@ -4,9 +4,9 @@ const path = require('path');
 async function ensureMigrationsTable(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL UNIQUE,
-      applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
 }
@@ -19,9 +19,9 @@ function getMigrationFiles() {
 
   return fs
     .readdirSync(migrationsDir)
-    .filter((file) => file.endsWith('.js'))
+    .filter(file => file.endsWith('.js'))
     .sort()
-    .map((file) => ({
+    .map(file => ({
       name: file,
       fullPath: path.join(migrationsDir, file),
     }));
@@ -30,8 +30,10 @@ function getMigrationFiles() {
 async function runMigrations(pool) {
   await ensureMigrationsTable(pool);
 
-  const [appliedRows] = await pool.query('SELECT name FROM schema_migrations');
-  const applied = new Set(appliedRows.map((row) => row.name));
+  const { rows: appliedRows } = await pool.query(
+    'SELECT name FROM schema_migrations',
+  );
+  const applied = new Set(appliedRows.map(row => row.name));
   const migrationFiles = getMigrationFiles();
 
   for (const migrationFile of migrationFiles) {
@@ -43,11 +45,15 @@ async function runMigrations(pool) {
     const migration = require(migrationFile.fullPath);
 
     if (typeof migration.up !== 'function') {
-      throw new Error(`Migration ${migrationFile.name} must export an up(pool) function`);
+      throw new Error(
+        `Migration ${migrationFile.name} must export an up(pool) function`,
+      );
     }
 
     await migration.up(pool);
-    await pool.query('INSERT INTO schema_migrations (name) VALUES (?)', [migrationFile.name]);
+    await pool.query('INSERT INTO schema_migrations (name) VALUES (?)', [
+      migrationFile.name,
+    ]);
     console.log(`Applied migration: ${migrationFile.name}`);
   }
 }
