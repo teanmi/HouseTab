@@ -7,13 +7,12 @@ A React Native CLI mobile app for managing house expenses and teams. This projec
 ## Table of Contents
 
 [Requirements](#requirements)
-[Setup](#setup)
-[Running the App](#running-the-app)
-[PostgresSQL](#PostgresSQL)
+[Local PostgreSQL setup](#local-postgresql-setup)
+[Backend Setup](#backend-setup)
 [Migrations](#migrations)
-[Railway Deployment](#railway-deployment)
-[Project Structure](#project-structure)
-[Environment Variables](#environment-variables)
+[Running the App](#running-the-app)
+[Running the Website](#running-the-website)
+]
 
 ---
 
@@ -31,6 +30,8 @@ Make sure the following are installed on your system:
 - Android Studio (if building mobile components)
 
 ---
+
+## 
 
 ## Local PostgreSQL setup
 
@@ -77,7 +78,17 @@ npm start
 
 The backend listens on `http://localhost:3000` and uses the local PostgreSQL database configured in `backend/.env`.
 
+Copy and setup .env from .env.example in the `/backend` folder
+
 ---
+
+## Website setup
+
+From `web/`:
+
+```bash
+npm install
+```
 
 ## Migrations
 
@@ -92,21 +103,15 @@ The migration system creates and tracks tables in PostgreSQL using the local dat
 
 ---
 
-## Running the app
+## Running the website
 
-Start Metro Bundler:
-
+Start the website
 ```bash
-cd mobile
-npx react-native start
+cd web
+npm start
 ```
 
-Then run the app:
-
-```bash
-cd mobile
-npx react-native run-android
-```
+Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
 
 ---
 
