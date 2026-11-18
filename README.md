@@ -1,4 +1,4 @@
-# HouseTab Mobile App
+# HouseTab Web App
 
 A React and Next.js web app for managing house expenses and teams. This project includes a **Next.js** frontend, a **Node.js/Express backend**, and a **PostgreSQL database**. It uses a local PostgreSQL instance for development and the same environment variables for hosted Postgres deployments.
 
